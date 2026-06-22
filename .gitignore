@@ -1,0 +1,13 @@
+menu.db
+__pycache__/
+*.pyc
+*.pyo
+.workbuddy/
+node_modules/
+test_order.py
+manage_menu.py
+add_dishes.py
+download_images.py
+gen_images.py
+order_app.html
+test_python.py

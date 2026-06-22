@@ -1,0 +1,31 @@
+<!-- 首页 — 菜单 + 点菜（带图片版） -->
+<scroll-view scroll-y class="page">
+  <view class="header">午后小食堂</view>
+
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+
+  <view wx:else>
+    <view class="section-title">今日菜单</view>
+    <view class="menu-item" wx:for="{{menu}}" wx:key="name">
+      <image class="menu-img" src="{{apiBase}}{{item.image}}" mode="aspectFill" />
+      <view class="menu-info">
+        <view class="menu-name">{{item.name}}</view>
+        <view class="menu-meta">¥{{item.price}} · {{item.category}}</view>
+      </view>
+      <button class="menu-btn" bindtap="addToCart" data-name="{{item.name}}">加入</button>
+    </view>
+  </view>
+</scroll-view>
+
+<view class="cart">
+  <view class="cart-title">购物车</view>
+  <view wx:if="{{cartCount === 0}}" class="cart-empty">还没点菜</view>
+  <view wx:else>
+    <view class="cart-row" wx:for="{{cartList}}" wx:key="dish_name">
+      <text>{{item.dish_name}} x{{item.quantity}}</text>
+      <text>¥{{item.subtotal}}</text>
+    </view>
+    <view class="cart-total">合计：¥{{totalPrice}}</view>
+    <button class="submit-btn" bindtap="submitOrder">提交订单</button>
+  </view>
+</view>

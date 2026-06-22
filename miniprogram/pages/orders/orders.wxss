@@ -1,0 +1,12 @@
+.page { padding-bottom: 20px; }
+.header { background: #ff6b35; color: #fff; padding: 16px; text-align: center; font-size: 18px; font-weight: bold; }
+.empty { text-align: center; padding: 50px; color: #aaa; font-size: 14px; }
+
+.order-card { margin: 10px 16px; padding: 14px; background: #fff; border-radius: 10px; }
+.order-top { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.order-name { font-size: 15px; font-weight: bold; }
+.order-time { font-size: 12px; color: #aaa; }
+.order-bottom { display: flex; justify-content: space-between; }
+.order-detail { font-size: 13px; color: #888; }
+.order-price { font-size: 15px; font-weight: bold; color: #ff6b35; }
+.summary { margin: 16px; padding: 14px; background: #fff; border-radius: 10px; text-align: center; font-size: 14px; color: #666; }

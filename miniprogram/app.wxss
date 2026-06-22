@@ -1,0 +1,5 @@
+/* 全局样式 — 所有页面共用 */
+page {
+  font-family: sans-serif;
+  background: #f5f5f5;
+}

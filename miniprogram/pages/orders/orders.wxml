@@ -1,0 +1,23 @@
+<!-- 订单列表页 -->
+<scroll-view scroll-y class="page">
+  <view class="header">订单记录</view>
+
+  <view wx:if="{{orders.length === 0}}" class="empty">暂无订单</view>
+
+  <view wx:else>
+    <view class="order-card" wx:for="{{orders}}" wx:key="index">
+      <view class="order-top">
+        <text class="order-name">{{item.dish_name}}</text>
+        <text class="order-time">{{item.created_at}}</text>
+      </view>
+      <view class="order-bottom">
+        <text class="order-detail">x{{item.quantity}} 单</text>
+        <text class="order-price">¥{{item.total}}</text>
+      </view>
+    </view>
+
+    <view class="summary">
+      <text>共 {{count}} 笔订单，合计 ¥{{total_amount}}</text>
+    </view>
+  </view>
+</scroll-view>
