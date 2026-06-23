@@ -2,15 +2,17 @@
 点菜后端 v3.0 — 带菜品图片
 图片存在 static/images/，URL 通过 /img/<name> 访问
 """
+import os
 import sqlite3
 from datetime import datetime
 from flask import Flask, request, g, send_from_directory
 
 app = Flask(__name__)
 
-
-# ===== 数据库初始化 =====
-DB_PATH = "menu.db"
+# 确保所有路径用绝对路径（云端需要）
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "menu.db")
+IMG_DIR = os.path.join(BASE_DIR, "static", "images")
 
 def get_db():
     if "db" not in g:
@@ -73,7 +75,7 @@ init_db()
 @app.route("/img/<path:filename>")
 def serve_image(filename):
     """返回 static/images/ 下的图片"""
-    return send_from_directory("static/images", filename)
+    return send_from_directory(IMG_DIR, filename)
 
 
 # ===== Class 模型 =====
