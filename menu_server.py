@@ -43,9 +43,17 @@ def init_db():
             dish_name  TEXT    NOT NULL,
             quantity   INTEGER NOT NULL,
             unit_price REAL    NOT NULL,
-            created_at TEXT    NOT NULL
+            created_at TEXT    NOT NULL,
+            note       TEXT    DEFAULT '',
+            dine_type  TEXT    DEFAULT '堂食'
         )
     ''')
+    # 兼容旧表：如果没有 note / dine_type 列就加上
+    cols = [row[1] for row in db.execute("PRAGMA table_info(orders)").fetchall()]
+    if "note" not in cols:
+        db.execute("ALTER TABLE orders ADD COLUMN note TEXT DEFAULT ''")
+    if "dine_type" not in cols:
+        db.execute("ALTER TABLE orders ADD COLUMN dine_type TEXT DEFAULT '堂食'")
     count = db.execute("SELECT COUNT(*) FROM dishes").fetchone()[0]
     if count == 0:
         dishes = [
@@ -69,6 +77,13 @@ def init_db():
     db.close()
 
 init_db()
+
+
+# ===== 前端页面 =====
+@app.route("/app")
+def order_app():
+    """返回点菜前端页面"""
+    return send_from_directory(BASE_DIR, "order_app.html")
 
 
 # ===== 图片服务 =====
@@ -110,6 +125,8 @@ class Order:
             "unit_price": self.unit_price,
             "total":      self.total,
             "created_at": self.created_at,
+            "note":       getattr(self, "note", ""),
+            "dine_type":  getattr(self, "dine_type", "堂食"),
         }
 
 
@@ -186,6 +203,8 @@ def make_order():
     data = request.get_json()
     dish_name = data.get("dish_name")
     quantity = data.get("quantity", 1)
+    note = data.get("note", "")
+    dine_type = data.get("dine_type", "堂食")
     db = get_db()
     dish = db.execute("SELECT price FROM dishes WHERE name = ?", (dish_name,)).fetchone()
     if not dish:
@@ -193,11 +212,13 @@ def make_order():
     unit_price = dish["price"]
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     db.execute(
-        "INSERT INTO orders (dish_name, quantity, unit_price, created_at) VALUES (?, ?, ?, ?)",
-        (dish_name, quantity, unit_price, now),
+        "INSERT INTO orders (dish_name, quantity, unit_price, created_at, note, dine_type) VALUES (?, ?, ?, ?, ?, ?)",
+        (dish_name, quantity, unit_price, now, note, dine_type),
     )
     db.commit()
     order = Order(dish_name, quantity, unit_price, now)
+    order.note = note
+    order.dine_type = dine_type
     return {
         "code": 200,
         "msg": f"下单成功: {dish_name} x{quantity}，小计 ¥{order.total}",
@@ -209,12 +230,16 @@ def make_order():
 def get_orders():
     db = get_db()
     rows = db.execute(
-        "SELECT dish_name, quantity, unit_price, created_at FROM orders ORDER BY id DESC"
+        "SELECT dish_name, quantity, unit_price, created_at, note, dine_type FROM orders ORDER BY id DESC"
     ).fetchall()
     order_list = [
         Order(r["dish_name"], r["quantity"], r["unit_price"], r["created_at"]).to_dict()
         for r in rows
     ]
+    # 把 note 和 dine_type 补进去
+    for i, r in enumerate(rows):
+        order_list[i]["note"] = r["note"] or ""
+        order_list[i]["dine_type"] = r["dine_type"] or "堂食"
     total_amount = sum(o["total"] for o in order_list)
     return {"code": 200, "data": order_list, "count": len(order_list), "total_amount": total_amount}
 
