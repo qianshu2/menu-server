@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>点菜小程序</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: sans-serif; background: #f5f5f5; max-width: 450px; margin: 0 auto; }
+    .header { background: #ff6b35; color: #fff; padding: 16px; text-align: center; font-size: 18px; font-weight: bold; }
+    .section-title { padding: 12px 16px 4px; font-size: 14px; color: #888; }
+    .menu-item { margin: 8px 16px; padding: 10px; background: #fff; border-radius: 10px; display: flex; align-items: center; gap: 10px; }
+    .menu-img { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+    .menu-info { flex: 1; min-width: 0; }
+    .menu-name { font-size: 15px; font-weight: bold; margin-bottom: 4px; }
+    .menu-price { font-size: 13px; color: #ff6b35; }
+    .menu-btn { background: #ff6b35; color: #fff; border: none; padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; }
+    .menu-btn:active { opacity: 0.7; }
+    .cart { position: fixed; bottom: 0; width: 100%; max-width: 450px; background: #fff; border-top: 1px solid #eee; padding: 12px 16px; }
+    .cart-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 14px; }
+    .cart-total { font-weight: bold; font-size: 16px; margin-top: 4px; padding-top: 8px; border-top: 1px solid #eee; }
+    .cart-submit { width: 100%; padding: 12px; background: #ff6b35; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+    .cart-submit:active { opacity: 0.7; }
+    .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.75); color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; display: none; z-index: 999; }
+    .loading { text-align: center; padding: 30px; color: #aaa; }
+  </style>
+</head>
+<body>
+
+<div class="header">午后小食堂</div>
+<div class="section-title">今日菜单</div>
+<div id="menu-container"><div class="loading">加载中...</div></div>
+
+<div class="cart" id="cart">
+  <div class="cart-row" style="color:#aaa;font-size:13px;">购物车</div>
+  <div id="cart-items"></div>
+  <div class="cart-total" id="cart-total">合计：¥0</div>
+  <button class="cart-submit" onclick="submitOrder()">提交订单</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = "http://127.0.0.1:5000";
+  let menu = [];
+  let cart = {};  // { "红烧牛肉面": 2, "可乐": 1 }
+
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.style.display = "block";
+    setTimeout(() => { t.style.display = "none"; }, 1500);
+  }
+
+  // 加载菜单
+  fetch(API + "/menu")
+    .then(r => r.json())
+    .then(res => {
+      menu = res.data;
+      const container = document.getElementById("menu-container");
+      container.innerHTML = menu.map(d => `
+        <div class="menu-item">
+          <img class="menu-img" src="${API}${d.image}" alt="${d.name}" />
+          <div class="menu-info">
+            <div class="menu-name">${d.name}</div>
+            <div class="menu-price">¥${d.price} · ${d.category}</div>
+          </div>
+          <button class="menu-btn" onclick="addToCart('${d.name}', ${d.price})">加入</button>
+        </div>
+      `).join("");
+    });
+
+  function addToCart(name) {
+    cart[name] = (cart[name] || 0) + 1;
+    renderCart();
+    toast("已加入：" + name);
+  }
+
+  function renderCart() {
+    let html = "";
+    let total = 0;
+    for (let name in cart) {
+      const dish = menu.find(d => d.name === name);
+      const price = dish ? dish.price : 0;
+      const qty = cart[name];
+      const subtotal = price * qty;
+      total += subtotal;
+      html += `<div class="cart-row"><span>${name} x${qty}</span><span>¥${subtotal}</span></div>`;
+    }
+    document.getElementById("cart-items").innerHTML = html || '<div style="color:#ccc;font-size:13px;">还没点菜</div>';
+    document.getElementById("cart-total").textContent = `合计：¥${total}`;
+  }
+
+  function submitOrder() {
+    if (Object.keys(cart).length === 0) {
+      toast("请先点菜！");
+      return;
+    }
+    const promises = [];
+    for (let name in cart) {
+      promises.push(
+        fetch(API + "/order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dish_name: name, quantity: cart[name] }),
+        }).then(r => r.json())
+      );
+    }
+    Promise.all(promises).then(results => {
+      const msgs = results.map(r => r.msg).join(" | ");
+      toast("下单成功：" + msgs);
+      cart = {};
+      renderCart();
+    });
+  }
+</script>
+
+</body>
+</html>
