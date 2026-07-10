@@ -1,0 +1,20 @@
+<!-- 菜谱详情页 -->
+<scroll-view scroll-y class="page">
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+
+  <view wx:elif="{{dish}}" class="detail">
+    <image class="dish-img" src="{{apiBase}}{{dish.image}}" mode="aspectFill" />
+    <view class="dish-name">{{dish.name}}</view>
+    <view class="dish-cat">{{dish.category}}</view>
+
+    <view class="section-title">食材</view>
+    <view class="section-body">{{dish.recipe}}</view>
+
+    <view class="section-title">做法</view>
+    <view class="steps">
+      <view wx:for="{{steps}}" wx:key="index" class="step">{{item}}</view>
+    </view>
+  </view>
+
+  <view wx:else class="loading">暂无菜谱</view>
+</scroll-view>

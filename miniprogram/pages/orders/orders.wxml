@@ -1,23 +1,23 @@
-<!-- 订单列表页 -->
+<!-- 饮食记录页 -->
 <scroll-view scroll-y class="page">
-  <view class="header">订单记录</view>
+  <view class="header">饮食记录</view>
 
-  <view wx:if="{{orders.length === 0}}" class="empty">暂无订单</view>
+  <view wx:if="{{orders.length === 0}}" class="empty">暂无记录</view>
 
   <view wx:else>
     <view class="order-card" wx:for="{{orders}}" wx:key="index">
       <view class="order-top">
         <text class="order-name">{{item.dish_name}}</text>
-        <text class="order-time">{{item.created_at}}</text>
       </view>
       <view class="order-bottom">
-        <text class="order-detail">x{{item.quantity}} 单</text>
-        <text class="order-price">¥{{item.total}}</text>
+        <text class="order-detail">x{{item.quantity}} 份</text>
       </view>
+      <view wx:if="{{item.note}}" class="order-note">备忘：{{item.note}}</view>
+      <view class="order-time">{{item.created_at}}</view>
     </view>
 
     <view class="summary">
-      <text>共 {{count}} 笔订单，合计 ¥{{total_amount}}</text>
+      <text>共 {{count}} 条记录</text>
     </view>
   </view>
 </scroll-view>

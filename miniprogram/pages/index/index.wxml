@@ -1,31 +1,44 @@
-<!-- 首页 — 菜单 + 点菜（带图片版） -->
+<!-- 首页 — 私人菜谱 -->
 <scroll-view scroll-y class="page">
-  <view class="header">午后小食堂</view>
+  <view class="header">今天吃什么</view>
 
   <view wx:if="{{loading}}" class="loading">加载中...</view>
 
   <view wx:else>
-    <view class="section-title">今日菜单</view>
-    <view class="menu-item" wx:for="{{menu}}" wx:key="name">
-      <image class="menu-img" src="{{apiBase}}{{item.image}}" mode="aspectFill" />
-      <view class="menu-info">
-        <view class="menu-name">{{item.name}}</view>
-        <view class="menu-meta">¥{{item.price}} · {{item.category}}</view>
+    <block wx:for="{{categories}}" wx:for-item="cat" wx:key="*this">
+      <view class="section-title">{{cat}}</view>
+      <view class="menu-item" wx:for="{{grouped[cat]}}" wx:for-item="item" wx:key="name">
+        <image class="menu-img" src="{{apiBase}}{{item.image}}" mode="aspectFill" />
+        <view class="menu-info">
+          <view class="menu-name">{{item.name}}</view>
+        </view>
+        <view class="menu-btns">
+          <button class="menu-btn" bindtap="addToCart" data-name="{{item.name}}">想吃</button>
+          <button class="menu-btn recipe-btn" bindtap="goToRecipe" data-name="{{item.name}}">做法</button>
+        </view>
       </view>
-      <button class="menu-btn" bindtap="addToCart" data-name="{{item.name}}">加入</button>
-    </view>
+    </block>
   </view>
 </scroll-view>
 
 <view class="cart">
-  <view class="cart-title">购物车</view>
-  <view wx:if="{{cartCount === 0}}" class="cart-empty">还没点菜</view>
+  <view class="cart-title">今天想吃的</view>
+  <view wx:if="{{cartCount === 0}}" class="cart-empty">还没想好吃什么</view>
   <view wx:else>
-    <view class="cart-row" wx:for="{{cartList}}" wx:key="dish_name">
-      <text>{{item.dish_name}} x{{item.quantity}}</text>
-      <text>¥{{item.subtotal}}</text>
+    <view class="cart-item" wx:for="{{cartList}}" wx:key="dish_name">
+      <text class="cart-item-name">{{item.dish_name}}</text>
+      <view class="cart-item-ctrl">
+        <button class="qty-btn" bindtap="decreaseQty" data-name="{{item.dish_name}}">-</button>
+        <text class="qty-num">{{item.quantity}}</text>
+        <button class="qty-btn" bindtap="increaseQty" data-name="{{item.dish_name}}">+</button>
+      </view>
     </view>
-    <view class="cart-total">合计：¥{{totalPrice}}</view>
-    <button class="submit-btn" bindtap="submitOrder">提交订单</button>
+
+    <!-- 备忘 -->
+    <view class="note-box">
+      <input class="note-input" placeholder="添加备忘..." value="{{note}}" bindinput="onNoteInput" />
+    </view>
+
+    <button class="submit-btn" bindtap="submitOrder">记下来</button>
   </view>
 </view>

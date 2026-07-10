@@ -3,8 +3,7 @@ const API = getApp().globalData.apiBase;
 Page({
   data: {
     orders: [],
-    count: 0,
-    total_amount: 0
+    count: 0
   },
 
   onShow() {
@@ -18,8 +17,7 @@ Page({
         const d = res.data;
         this.setData({
           orders: d.data,
-          count: d.count,
-          total_amount: d.total_amount
+          count: d.count
         });
       },
       fail: () => {

@@ -1,0 +1,13 @@
+.page { padding-bottom: 30px; }
+.loading { text-align: center; padding: 50px; color: #aaa; font-size: 14px; }
+
+.detail { background: #fff; }
+.dish-img { width: 100%; height: 220px; }
+.dish-name { font-size: 20px; font-weight: bold; padding: 14px 16px 2px; }
+.dish-cat { font-size: 12px; color: #ff6b35; padding: 0 16px 10px; }
+
+.section-title { font-size: 15px; font-weight: bold; color: #333; padding: 14px 16px 6px; border-top: 1px solid #f0f0f0; }
+.section-body { font-size: 14px; color: #555; line-height: 1.7; padding: 0 16px; }
+
+.steps { padding: 0 16px; }
+.step { font-size: 14px; color: #555; line-height: 1.8; padding: 8px 12px; margin-top: 8px; background: #fafafa; border-radius: 8px; border-left: 3px solid #ff6b35; }

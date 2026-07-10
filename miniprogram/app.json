@@ -1,11 +1,12 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/orders/orders"
+    "pages/orders/orders",
+    "pages/recipe/recipe"
   ],
   "window": {
     "navigationBarBackgroundColor": "#ff6b35",
-    "navigationBarTitleText": "午后小食堂",
+    "navigationBarTitleText": "今天吃什么",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#f5f5f5"
   },
@@ -15,11 +16,11 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "菜单"
+        "text": "菜谱"
       },
       {
         "pagePath": "pages/orders/orders",
-        "text": "订单"
+        "text": "记录"
       }
     ]
   }
