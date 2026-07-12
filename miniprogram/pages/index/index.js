@@ -1,5 +1,15 @@
 const API = getApp().globalData.apiBase;
 
+const CAT_ICONS = {
+  '烧菜': '../../images/cats/shaocai.png',
+  '凉菜': '../../images/cats/liangcai.png',
+  '汤羹': '../../images/cats/tanggeng.png',
+  '主食': '../../images/cats/zhushi.png',
+  '小吃': '../../images/cats/xiaochi.png',
+  '饮品': '../../images/cats/yinpin.png'
+};
+const DEFAULT_ICON = '../../images/cats/default.png';
+
 Page({
   data: {
     apiBase: API,
@@ -10,7 +20,9 @@ Page({
     cart: {},
     cartList: [],
     cartCount: 0,
-    note: ""
+    note: "",
+    activeCat: "",
+    catList: []
   },
 
   onLoad() {
@@ -35,13 +47,25 @@ Page({
           }
           grouped[dish.category].push(dish);
         });
-        this.setData({ menu, categories, grouped, loading: false });
+        const catList = categories.map(c => ({
+          name: c,
+          icon: CAT_ICONS[c] || DEFAULT_ICON
+        }));
+        this.setData({ menu, categories, grouped, catList, activeCat: categories[0] || "", loading: false });
       },
       fail: () => {
         wx.showToast({ title: "加载失败", icon: "error" });
         this.setData({ loading: false });
       }
     });
+  },
+
+  // ===== 左侧分类切换 =====
+
+  switchCat(e) {
+    const cat = e.currentTarget.dataset.cat;
+    if (cat === this.data.activeCat) return;
+    this.setData({ activeCat: cat });
   },
 
   // ===== 清单操作 =====

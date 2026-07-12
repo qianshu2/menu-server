@@ -1,5 +1,16 @@
-.page { padding-bottom: 350px; }
-.header { background: #ff6b35; color: #fff; padding: 16px; text-align: center; font-size: 18px; font-weight: bold; }
+.page { display: flex; flex-direction: column; height: 100vh; }
+.header { background: #ff6b35; color: #fff; padding: 16px; text-align: center; font-size: 18px; font-weight: bold; flex-shrink: 0; }
+
+/* 左右分栏 */
+.main { display: flex; flex: 1; overflow: hidden; }
+.sidebar { width: 88px; background: #f7f6f3; height: 100%; box-sizing: border-box; padding-bottom: 200px; }
+.sidebar .cat-item { padding: 14px 4px; text-align: center; position: relative; }
+.sidebar .cat-icon { width: 46px; height: 46px; margin: 0 auto 4px; display: block; border-radius: 12px; }
+.sidebar .cat-name { font-size: 11px; color: #666; line-height: 1.2; }
+.sidebar .cat-item.active { background: #fff; }
+.sidebar .cat-item.active .cat-name { color: #ff6b35; font-weight: bold; }
+.sidebar .cat-item.active::after { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; background: #ff6b35; }
+.dish-area { flex: 1; background: #fff; height: 100%; box-sizing: border-box; padding-bottom: 200px; }
 .section-title { padding: 12px 16px 4px; font-size: 14px; color: #888; }
 .menu-item { margin: 8px 16px; padding: 10px; background: #fff; border-radius: 10px; display: flex; align-items: center; gap: 10px; }
 .menu-img { width: 70px; height: 70px; border-radius: 8px; flex-shrink: 0; }

@@ -1,13 +1,24 @@
 <!-- 首页 — 私人菜谱 -->
-<scroll-view scroll-y class="page">
+<view class="page">
   <view class="header">今天吃什么</view>
 
   <view wx:if="{{loading}}" class="loading">加载中...</view>
 
-  <view wx:else>
-    <block wx:for="{{categories}}" wx:for-item="cat" wx:key="*this">
-      <view class="section-title">{{cat}}</view>
-      <view class="menu-item" wx:for="{{grouped[cat]}}" wx:for-item="item" wx:key="name">
+  <view wx:else class="main">
+    <!-- 左侧分类栏 -->
+    <scroll-view scroll-y class="sidebar">
+      <view wx:for="{{catList}}" wx:key="name"
+            class="cat-item {{item.name === activeCat ? 'active' : ''}}"
+            bindtap="switchCat" data-cat="{{item.name}}">
+        <image class="cat-icon" src="{{item.icon}}" mode="aspectFit" />
+        <view class="cat-name">{{item.name}}</view>
+      </view>
+    </scroll-view>
+
+    <!-- 右侧菜品 -->
+    <scroll-view scroll-y class="dish-area">
+      <view class="section-title">{{activeCat}}</view>
+      <view class="menu-item" wx:for="{{grouped[activeCat]}}" wx:for-item="item" wx:key="name">
         <image class="menu-img" src="{{apiBase}}{{item.image}}" mode="aspectFill" />
         <view class="menu-info">
           <view class="menu-name">{{item.name}}</view>
@@ -17,9 +28,9 @@
           <button class="menu-btn recipe-btn" bindtap="goToRecipe" data-name="{{item.name}}">做法</button>
         </view>
       </view>
-    </block>
+    </scroll-view>
   </view>
-</scroll-view>
+</view>
 
 <view class="cart">
   <view class="cart-title">今天想吃的</view>
