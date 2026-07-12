@@ -11,12 +11,12 @@
 .recipe-btn { background: #fff; color: #ff6b35; border: 1px solid #ff6b35; }
 .loading { text-align: center; padding: 30px; color: #aaa; }
 
-/* 购物车 */
+/* 今日记录 */
 .cart { position: fixed; bottom: 0; width: 100%; background: #fff; border-top: 1px solid #eee; padding: 12px 16px; box-sizing: border-box; }
 .cart-title { font-size: 13px; color: #aaa; margin-bottom: 4px; }
 .cart-empty { color: #ccc; font-size: 13px; }
 
-/* 购物车项目 — 加减按钮 */
+/* 今日记录项目 — 加减按钮 */
 .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #f0f0f0; }
 .cart-item-name { font-size: 14px; flex: 1; }
 .cart-item-ctrl { display: flex; align-items: center; gap: 6px; }

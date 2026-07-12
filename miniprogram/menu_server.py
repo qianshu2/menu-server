@@ -1,5 +1,5 @@
 """
-点菜后端 v3.0 — 带菜品图片
+小夏的美食手账后端 v3.0 — 带菜品图片
 图片存在 static/images/，URL 通过 /img/<name> 访问
 """
 import os
@@ -74,7 +74,7 @@ init_db()
 # ===== 前端页面 =====
 @app.route("/app")
 def order_app():
-    """返回点菜前端页面"""
+    """返回饮食记录前端页面"""
     return send_from_directory(BASE_DIR, "order_app.html")
 
 
@@ -207,7 +207,7 @@ def make_order():
     order = Order(dish_name, quantity, unit_price, now)
     return {
         "code": 200,
-        "msg": f"下单成功: {dish_name} x{quantity}，小计 ¥{order.total}",
+        "msg": f"记录成功: {dish_name} x{quantity}，小计 ¥{order.total}",
         "order": order.to_dict(),
     }
 
@@ -237,16 +237,16 @@ def clear_orders():
 @app.route("/")
 def home():
     return {
-        "message": "欢迎来到点菜小程序后端 v3.0",
+        "message": "欢迎来到小夏的美食手账后端 v3.0",
         "接口": [
             {"地址": "/",                    "说明": "首页"},
             {"地址": "/menu",                "说明": "获取菜单（含图片）"},
             {"地址": "/img/<文件名>",         "说明": "获取图片"},
             {"地址": "/dish (POST)",         "说明": "添加菜品"},
             {"地址": "/dish/<菜名> (DELETE)",  "说明": "删除菜品"},
-            {"地址": "/order (POST)",        "说明": "下单"},
-            {"地址": "/orders",              "说明": "订单列表"},
-            {"地址": "/clear-orders (POST)",  "说明": "清空订单"},
+            {"地址": "/order (POST)",        "说明": "记录饮食"},
+            {"地址": "/orders",              "说明": "记录列表"},
+            {"地址": "/clear-orders (POST)",  "说明": "清空记录"},
         ],
     }
 

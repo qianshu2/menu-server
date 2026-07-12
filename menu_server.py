@@ -1,6 +1,6 @@
 """
 小夏的美食手账后端 v4.1 — 个人饮食记录版
-- 去掉了价格（price）和堂食/外卖（dine_type）
+- 去掉了价格（price）和就餐类型（dine_type）
 - 一条记录 = 吃了什么 + 几份 + 时间 + 备忘
 - 菜品含菜谱（recipe 食材 + steps 做法），GET /dish/<菜名> 查看详情
 图片存在 static/images/，URL 通过 /img/<name> 访问
@@ -150,7 +150,7 @@ init_db()
 # ===== 前端页面 =====
 @app.route("/app")
 def order_app():
-    """返回点菜前端页面"""
+    """返回饮食记录前端页面"""
     return send_from_directory(BASE_DIR, "order_app.html")
 
 

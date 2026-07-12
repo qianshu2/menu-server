@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>点菜小程序</title>
+  <title>小夏的美食手账</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: sans-serif; background: #f5f5f5; max-width: 450px; margin: 0 auto; }
@@ -27,14 +27,14 @@
 <body>
 
 <div class="header">小夏的美食手账</div>
-<div class="section-title">今日菜单</div>
+<div class="section-title">今日饮食</div>
 <div id="menu-container"><div class="loading">加载中...</div></div>
 
 <div class="cart" id="cart">
-  <div class="cart-row" style="color:#aaa;font-size:13px;">购物车</div>
+  <div class="cart-row" style="color:#aaa;font-size:13px;">今日记录</div>
   <div id="cart-items"></div>
   <div class="cart-total" id="cart-total">合计：¥0</div>
-  <button class="cart-submit" onclick="submitOrder()">提交订单</button>
+  <button class="cart-submit" onclick="submitOrder()">保存记录</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -51,7 +51,7 @@
     setTimeout(() => { t.style.display = "none"; }, 1500);
   }
 
-  // 加载菜单
+  // 加载食物列表
   fetch(API + "/menu")
     .then(r => r.json())
     .then(res => {
@@ -64,7 +64,7 @@
             <div class="menu-name">${d.name}</div>
             <div class="menu-price">¥${d.price} · ${d.category}</div>
           </div>
-          <button class="menu-btn" onclick="addToCart('${d.name}', ${d.price})">加入</button>
+          <button class="menu-btn" onclick="addToCart('${d.name}', ${d.price})">记录</button>
         </div>
       `).join("");
     });
@@ -72,7 +72,7 @@
   function addToCart(name) {
     cart[name] = (cart[name] || 0) + 1;
     renderCart();
-    toast("已加入：" + name);
+    toast("已记录：" + name);
   }
 
   function renderCart() {
@@ -86,13 +86,13 @@
       total += subtotal;
       html += `<div class="cart-row"><span>${name} x${qty}</span><span>¥${subtotal}</span></div>`;
     }
-    document.getElementById("cart-items").innerHTML = html || '<div style="color:#ccc;font-size:13px;">还没点菜</div>';
+    document.getElementById("cart-items").innerHTML = html || '<div style="color:#ccc;font-size:13px;">还没记录</div>';
     document.getElementById("cart-total").textContent = `合计：¥${total}`;
   }
 
   function submitOrder() {
     if (Object.keys(cart).length === 0) {
-      toast("请先点菜！");
+      toast("请先选择食物！");
       return;
     }
     const promises = [];
@@ -107,7 +107,7 @@
     }
     Promise.all(promises).then(results => {
       const msgs = results.map(r => r.msg).join(" | ");
-      toast("下单成功：" + msgs);
+      toast("记录成功：" + msgs);
       cart = {};
       renderCart();
     });
