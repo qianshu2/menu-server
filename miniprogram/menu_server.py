@@ -138,7 +138,7 @@ def add_dish():
     category = data.get("category")
 
     if not name or price is None:
-        return {"code": 400, "msg": "菜名和价格不能为空"}, 400
+        return {"code": 400, "msg": "菜名不能为空"}, 400
 
     db = get_db()
     exist = db.execute("SELECT id FROM dishes WHERE name = ?", (name,)).fetchone()
@@ -151,12 +151,12 @@ def add_dish():
         (name, price, category, image),
     )
     db.commit()
-    return {"code": 200, "msg": f"添加成功: {name} ¥{price}"}
+    return {"code": 200, "msg": f"添加成功: {name}"}
 
 
 @app.route("/dish/<name>", methods=["PUT"])
 def update_dish(name):
-    """更新菜品 —— 可更新价格、分类、图片路径"""
+    """更新菜品 —— 可更新分类、图片路径"""
     data = request.get_json()
     db = get_db()
     exist = db.execute("SELECT id FROM dishes WHERE name = ?", (name,)).fetchone()
@@ -207,7 +207,7 @@ def make_order():
     order = Order(dish_name, quantity, unit_price, now)
     return {
         "code": 200,
-        "msg": f"记录成功: {dish_name} x{quantity}，小计 ¥{order.total}",
+        "msg": f"记录成功: {dish_name} x{quantity}",
         "order": order.to_dict(),
     }
 
@@ -231,7 +231,7 @@ def clear_orders():
     db = get_db()
     db.execute("DELETE FROM orders")
     db.commit()
-    return {"code": 200, "msg": "订单已清空"}
+    return {"code": 200, "msg": "记录已清空"}
 
 
 @app.route("/")
@@ -240,7 +240,7 @@ def home():
         "message": "欢迎来到小夏的美食手账后端 v3.0",
         "接口": [
             {"地址": "/",                    "说明": "首页"},
-            {"地址": "/menu",                "说明": "获取菜单（含图片）"},
+            {"地址": "/menu",                "说明": "获取菜谱（含图片）"},
             {"地址": "/img/<文件名>",         "说明": "获取图片"},
             {"地址": "/dish (POST)",         "说明": "添加菜品"},
             {"地址": "/dish/<菜名> (DELETE)",  "说明": "删除菜品"},

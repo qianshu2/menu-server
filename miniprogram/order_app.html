@@ -33,7 +33,7 @@
 <div class="cart" id="cart">
   <div class="cart-row" style="color:#aaa;font-size:13px;">今日记录</div>
   <div id="cart-items"></div>
-  <div class="cart-total" id="cart-total">合计：¥0</div>
+  <div class="cart-total" id="cart-total">共 0 份</div>
   <button class="cart-submit" onclick="submitOrder()">保存记录</button>
 </div>
 
@@ -62,9 +62,9 @@
           <img class="menu-img" src="${API}${d.image}" alt="${d.name}" />
           <div class="menu-info">
             <div class="menu-name">${d.name}</div>
-            <div class="menu-price">¥${d.price} · ${d.category}</div>
+            <div class="menu-price">${d.category}</div>
           </div>
-          <button class="menu-btn" onclick="addToCart('${d.name}', ${d.price})">记录</button>
+          <button class="menu-btn" onclick="addToCart('${d.name}')">记录</button>
         </div>
       `).join("");
     });
@@ -77,17 +77,14 @@
 
   function renderCart() {
     let html = "";
-    let total = 0;
+    let count = 0;
     for (let name in cart) {
-      const dish = menu.find(d => d.name === name);
-      const price = dish ? dish.price : 0;
       const qty = cart[name];
-      const subtotal = price * qty;
-      total += subtotal;
-      html += `<div class="cart-row"><span>${name} x${qty}</span><span>¥${subtotal}</span></div>`;
+      count += qty;
+      html += `<div class="cart-row"><span>${name} x${qty} 份</span></div>`;
     }
     document.getElementById("cart-items").innerHTML = html || '<div style="color:#ccc;font-size:13px;">还没记录</div>';
-    document.getElementById("cart-total").textContent = `合计：¥${total}`;
+    document.getElementById("cart-total").textContent = `共 ${count} 份`;
   }
 
   function submitOrder() {

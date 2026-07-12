@@ -106,7 +106,7 @@ Page({
     this.setData({ note: e.detail.value });
   },
 
-  // ===== 提交 =====
+  // ===== 保存记录 =====
 
   submitOrder() {
     if (this.data.cartCount === 0) {
