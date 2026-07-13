@@ -11,3 +11,7 @@ download_images.py
 gen_images.py
 order_app.html
 test_python.py
+
+# 本地备份（非仓库内容，避免重复大图进仓库）
+static/images_originals/
+menu.db.bak
