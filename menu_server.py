@@ -17,6 +17,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "menu.db")
 IMG_DIR = os.path.join(BASE_DIR, "static", "images")
 
+# 菜谱字典（模块级，作为「做法」的单一事实来源；init_db 结束后填充，供 /dish 回退使用）
+RECIPES = {}
+
 def get_db():
     if "db" not in g:
         g.db = sqlite3.connect(DB_PATH)
@@ -209,6 +212,8 @@ def init_db():
             "UPDATE dishes SET recipe=?, steps=? WHERE name=?",
             (recipe, steps, name),
         )
+    global RECIPES
+    RECIPES = recipes  # 暴露给 /dish 接口，库内菜谱为空时回退
 
     db.commit()
     db.close()
@@ -284,7 +289,12 @@ def get_dish(name):
     ).fetchone()
     if not row:
         return {"code": 404, "msg": f"没有这道菜: {name}"}, 404
-    dish = Dish(row["name"], row["category"], row["image"], row["recipe"], row["steps"])
+    # 库内菜谱为空时回退到代码字典（确保「做法」始终可用，不依赖 init_db 写入时机）
+    recipe = row["recipe"] or ""
+    steps = row["steps"] or ""
+    if not recipe and name in RECIPES:
+        recipe, steps = RECIPES[name]
+    dish = Dish(row["name"], row["category"], row["image"], recipe, steps)
     return {"code": 200, "data": dish.to_dict()}
 
 
