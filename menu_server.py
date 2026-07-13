@@ -204,8 +204,9 @@ def init_db():
         ),
     }
     for name, (recipe, steps) in recipes.items():
+        # 代码字典是菜谱的单一事实来源，每次启动都按代码同步，避免持久库/缓存导致菜谱为空
         db.execute(
-            "UPDATE dishes SET recipe=?, steps=? WHERE name=? AND (recipe IS NULL OR recipe='')",
+            "UPDATE dishes SET recipe=?, steps=? WHERE name=?",
             (recipe, steps, name),
         )
 
