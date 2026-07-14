@@ -8,6 +8,9 @@
     <view class="empty-title">今天还没记录吃什么</view>
     <view class="empty-sub">先去「菜谱」选几道今天想吃的菜，会自动按菜品整理出食材清单</view>
     <button class="go-btn" bindtap="goRecord">去选菜</button>
+    <view class="seasoning-entry" bindtap="toggleAdd">
+      <text class="plus">＋</text> 补充常备调料
+    </view>
   </view>
 
   <view wx:else>
@@ -15,6 +18,7 @@
       <text>已买 {{bought}} / {{total}}</text>
       <view class="progress-btns">
         <button class="mini-btn" bindtap="clearChecked" wx:if="{{bought > 0}}">清空勾选</button>
+        <button class="mini-btn staple" bindtap="clearStaple" wx:if="{{showStapleHint}}">常备标要买</button>
         <button class="mini-btn danger" bindtap="clearToday">清除当日</button>
       </view>
     </view>
@@ -22,7 +26,7 @@
     <view class="tip">按菜品列出所需食材，点击勾选已购买的（主材排在最前）</view>
 
     <view class="group" wx:for="{{groups}}" wx:key="dish">
-      <view class="group-title">{{item.dish}}</view>
+      <view class="group-title {{item.isSeasoning ? 'seasoning-title' : ''}}">{{item.dish}}</view>
       <view class="item" wx:for="{{item.items}}" wx:for-item="mat" wx:key="text"
             bindtap="toggleItem" data-text="{{mat.text}}">
         <view class="checkbox {{mat.checked ? 'checked' : ''}}">
@@ -30,7 +34,26 @@
         </view>
         <text class="item-text {{mat.checked ? 'done' : ''}}">{{mat.text}}</text>
         <text wx:if="{{mat.main}}" class="main-tag">主材</text>
+        <text wx:if="{{mat.staple}}" class="staple-tag">常备</text>
       </view>
     </view>
+
+    <!-- 补充调料入口 -->
+    <view class="seasoning-entry" bindtap="toggleAdd">
+      <text class="plus">＋</text> 补充常备调料
+    </view>
+    <view wx:if="{{showAdd}}" class="add-panel">
+      <view class="add-row">
+        <input class="add-input" placeholder="输入调料名，如 食用油" value="{{addInput}}"
+               bindinput="onAddInput" confirm-type="send" bindconfirm="addSeasoning" />
+        <button class="add-send" bindtap="addSeasoning">添加</button>
+      </view>
+      <view wx:if="{{seasoningLib.length > 0}}" class="lib-chips">
+        <text class="lib-label">点选快速补充：</text>
+        <view class="chip" wx:for="{{seasoningLib}}" wx:key="*this" bindtap="addSeasoning" data-name="{{item}}">{{item}}</view>
+      </view>
+    </view>
+
+    <view wx:if="{{showStapleHint}}" class="staple-hint">勾选过的调料默认视为已购，如需购买点一下取消勾选</view>
   </view>
 </scroll-view>

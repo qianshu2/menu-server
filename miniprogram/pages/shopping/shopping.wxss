@@ -12,11 +12,13 @@
 .mini-btn { background: #f0f0f0; color: #888; font-size: 12px; border-radius: 16px; padding: 0 12px; height: 28px; line-height: 28px; min-height: 0; margin: 0; }
 .mini-btn::after { border: none; }
 .mini-btn.danger { color: #e74c3c; }
+.mini-btn.staple { color: #8e6b1f; background: #fdf3df; }
 
 .tip { font-size: 12px; color: #aaa; padding: 0 16px 10px; }
 
 .group { margin: 8px 16px 4px; background: #fff; border-radius: 10px; overflow: hidden; }
 .group-title { font-size: 14px; font-weight: bold; color: #ff6b35; padding: 10px 14px 6px; border-bottom: 1px solid #f5f5f5; }
+.group-title.seasoning-title { color: #8e6b1f; }
 .item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #f7f7f7; }
 .item:last-child { border-bottom: none; }
 .checkbox { width: 22px; height: 22px; border: 2px solid #ff6b35; border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
@@ -25,3 +27,18 @@
 .item-text { font-size: 15px; color: #333; flex: 1; }
 .item-text.done { text-decoration: line-through; color: #bbb; }
 .main-tag { font-size: 11px; color: #ff6b35; border: 1px solid #ff6b35; border-radius: 4px; padding: 1px 5px; flex-shrink: 0; }
+.staple-tag { font-size: 11px; color: #8e6b1f; border: 1px solid #8e6b1f; border-radius: 4px; padding: 1px 5px; flex-shrink: 0; }
+
+/* 补充调料 */
+.seasoning-entry { margin: 16px; padding: 12px; text-align: center; color: #8e6b1f; background: #fdf3df; border: 1px dashed #e0c89a; border-radius: 10px; font-size: 14px; }
+.seasoning-entry .plus { font-weight: bold; margin-right: 4px; }
+.add-panel { margin: 0 16px; padding: 12px; background: #fff; border-radius: 10px; }
+.add-row { display: flex; gap: 8px; }
+.add-input { flex: 1; border: 1px solid #eee; border-radius: 8px; padding: 8px 10px; font-size: 14px; background: #fafafa; }
+.add-send { background: #ff6b35; color: #fff; font-size: 13px; border-radius: 8px; padding: 0 16px; height: 38px; line-height: 38px; min-height: 0; margin: 0; }
+.add-send::after { border: none; }
+.lib-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+.lib-label { font-size: 12px; color: #aaa; width: 100%; }
+.chip { font-size: 13px; color: #8e6b1f; background: #fdf3df; border: 1px solid #e0c89a; border-radius: 16px; padding: 5px 12px; }
+.chip:active { background: #f3e2c0; }
+.staple-hint { font-size: 12px; color: #b08a3a; background: #fdf3df; margin: 8px 16px 0; padding: 8px 12px; border-radius: 8px; line-height: 1.6; }
