@@ -397,6 +397,14 @@ def get_orders():
 @app.route("/clear-orders", methods=["POST"])
 def clear_orders():
     db = get_db()
+    # 支持按日期清除当日记录（采购清单「换菜」用）；不传 date 则清空全部（兼容旧调用）
+    data = request.get_json(silent=True) or {}
+    date = data.get("date")
+    if date:
+        cur = db.execute("DELETE FROM orders WHERE created_at LIKE ?", (date + "%",))
+        deleted = cur.rowcount
+        db.commit()
+        return {"code": 200, "msg": f"已清除 {date} 的记录 {deleted} 条", "deleted": deleted}
     db.execute("DELETE FROM orders")
     db.commit()
     return {"code": 200, "msg": "记录已清空"}

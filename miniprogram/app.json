@@ -2,7 +2,8 @@
   "pages": [
     "pages/index/index",
     "pages/orders/orders",
-    "pages/recipe/recipe"
+    "pages/recipe/recipe",
+    "pages/shopping/shopping"
   ],
   "window": {
     "navigationBarBackgroundColor": "#ff6b35",
@@ -21,6 +22,10 @@
       {
         "pagePath": "pages/orders/orders",
         "text": "记录"
+      },
+      {
+        "pagePath": "pages/shopping/shopping",
+        "text": "采购"
       }
     ]
   }

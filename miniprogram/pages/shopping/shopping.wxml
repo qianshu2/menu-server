@@ -1,0 +1,36 @@
+<!-- 采购清单页 -->
+<scroll-view scroll-y class="page">
+  <view class="header">采购清单</view>
+
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+
+  <view wx:elif="{{empty}}" class="empty">
+    <view class="empty-title">今天还没记录吃什么</view>
+    <view class="empty-sub">先去「菜谱」选几道今天想吃的菜，会自动按菜品整理出食材清单</view>
+    <button class="go-btn" bindtap="goRecord">去选菜</button>
+  </view>
+
+  <view wx:else>
+    <view class="progress">
+      <text>已买 {{bought}} / {{total}}</text>
+      <view class="progress-btns">
+        <button class="mini-btn" bindtap="clearChecked" wx:if="{{bought > 0}}">清空勾选</button>
+        <button class="mini-btn danger" bindtap="clearToday">清除当日</button>
+      </view>
+    </view>
+
+    <view class="tip">按菜品列出所需食材，点击勾选已购买的（主材排在最前）</view>
+
+    <view class="group" wx:for="{{groups}}" wx:key="dish">
+      <view class="group-title">{{item.dish}}</view>
+      <view class="item" wx:for="{{item.items}}" wx:for-item="mat" wx:key="text"
+            bindtap="toggleItem" data-text="{{mat.text}}">
+        <view class="checkbox {{mat.checked ? 'checked' : ''}}">
+          <text wx:if="{{mat.checked}}" class="tick">✓</text>
+        </view>
+        <text class="item-text {{mat.checked ? 'done' : ''}}">{{mat.text}}</text>
+        <text wx:if="{{mat.main}}" class="main-tag">主材</text>
+      </view>
+    </view>
+  </view>
+</scroll-view>

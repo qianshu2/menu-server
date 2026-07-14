@@ -11,3 +11,9 @@
 .order-price { font-size: 15px; font-weight: bold; color: #ff6b35; }
 .order-note { font-size: 12px; color: #999; margin-top: 4px; padding: 4px 8px; background: #fafafa; border-radius: 4px; }
 .summary { margin: 16px; padding: 14px; background: #fff; border-radius: 10px; text-align: center; font-size: 14px; color: #666; }
+
+.shop-btn { margin: 10px 16px 0; background: #ff6b35; color: #fff; font-size: 14px; border-radius: 22px; }
+.shop-btn::after { border: none; }
+
+.clear-day-btn { margin: 10px 16px 0; background: #fff; color: #e74c3c; font-size: 13px; border-radius: 22px; border: 1px solid #e74c3c; }
+.clear-day-btn::after { border: none; }

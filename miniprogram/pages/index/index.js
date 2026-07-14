@@ -173,8 +173,12 @@ Page({
     if (errors.length > 0) {
       wx.showToast({ title: "记录失败", icon: "error" });
     } else {
-      wx.showToast({ title: "已记录！", icon: "success" });
+      wx.showToast({ title: "已生成采购清单", icon: "success" });
       this.setData({ cart: {}, cartList: [], cartCount: 0, note: "" });
+      // 记录完成后自动跳到采购清单，方便直接买菜
+      setTimeout(() => {
+        wx.switchTab({ url: "/pages/shopping/shopping" });
+      }, 800);
     }
   }
 });

@@ -5,6 +5,8 @@
   <view wx:if="{{orders.length === 0}}" class="empty">暂无记录</view>
 
   <view wx:else>
+    <button class="shop-btn" bindtap="goShopping">生成今日采购清单 →</button>
+    <button class="clear-day-btn" bindtap="clearToday">清除当日记录</button>
     <view class="order-card" wx:for="{{orders}}" wx:key="index">
       <view class="order-top">
         <text class="order-name">{{item.dish_name}}</text>
