@@ -7,7 +7,10 @@
 """
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+# 后端部署在 Render（容器默认 UTC 时区），时间戳必须用北京时间生成
+BEIJING = timezone(timedelta(hours=8))
 from flask import Flask, request, g, send_from_directory
 
 app = Flask(__name__)
@@ -258,7 +261,7 @@ class Order:
     def __init__(self, dish_name, quantity, created_at=None):
         self.dish_name = dish_name
         self.quantity = quantity
-        self.created_at = created_at or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.created_at = created_at or datetime.now(BEIJING).strftime("%Y-%m-%d %H:%M:%S")
         self.note = ""
 
     def to_dict(self):
@@ -365,7 +368,7 @@ def make_order():
     dish = db.execute("SELECT id FROM dishes WHERE name = ?", (dish_name,)).fetchone()
     if not dish:
         return {"code": 404, "msg": f"没有这道菜: {dish_name}"}, 404
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(BEIJING).strftime("%Y-%m-%d %H:%M:%S")
     db.execute(
         "INSERT INTO orders (dish_name, quantity, created_at, note) VALUES (?, ?, ?, ?)",
         (dish_name, quantity, now, note),
