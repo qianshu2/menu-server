@@ -15,6 +15,32 @@ from flask import Flask, request, g, send_from_directory
 
 app = Flask(__name__)
 
+# ===== 安全配置 =====
+# 生产环境默认关闭调试模式；仅在显式设置 DEBUG=true 时才开启。
+# 调试模式会暴露交互式调试器（潜在 RCE）与详细堆栈信息，存在严重安全风险。
+app.config["DEBUG"] = os.environ.get("DEBUG", "false").lower() == "true"
+# 限制请求体大小为 1MB，防止超大请求体耗尽资源（DoS）
+app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
+
+# 后台管理接口密钥（环境变量 ADMIN_TOKEN）。
+# 未设置时，所有写/删管理接口直接拒绝访问，防止被安全测试脚本或未授权用户
+# 越权增删菜品、清空全部记录。小程序运行所需的公开接口不受影响。
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN")
+
+
+def require_admin():
+    """校验后台管理接口访问权限。
+
+    返回 None 表示校验通过；否则返回 (响应体, 状态码)。
+    """
+    if not ADMIN_TOKEN:
+        return {"code": 403, "msg": "管理接口未启用"}, 403
+    token = request.headers.get("X-Admin-Token") or request.args.get("token", "")
+    if token != ADMIN_TOKEN:
+        return {"code": 401, "msg": "未授权访问"}, 401
+    return None
+
+
 # 确保所有路径用绝对路径（云端需要）
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "menu.db")
@@ -232,9 +258,15 @@ def order_app():
 
 
 # ===== 图片服务 =====
-@app.route("/img/<path:filename>")
+@app.route("/img/<filename>")
 def serve_image(filename):
-    """返回 static/images/ 下的图片"""
+    """返回 static/images/ 下的图片；仅允许图片扩展名，禁止路径穿越"""
+    # 防御目录遍历：拒绝包含路径分隔符或父目录标记的文件名
+    if ".." in filename or "/" in filename or "\\" in filename:
+        return {"code": 403, "msg": "禁止访问"}, 403
+    allowed_ext = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg")
+    if not filename.lower().endswith(allowed_ext):
+        return {"code": 403, "msg": "禁止访问"}, 403
     return send_from_directory(IMG_DIR, filename)
 
 
@@ -303,12 +335,19 @@ def get_dish(name):
 
 @app.route("/dish", methods=["POST"])
 def add_dish():
-    data = request.get_json()
-    name = data.get("name")
-    category = data.get("category")
+    denied = require_admin()
+    if denied:
+        return denied
+    data = request.get_json(silent=True)
+    if not data:
+        return {"code": 400, "msg": "请求体格式错误"}, 400
+    name = (data.get("name") or "").strip()
+    category = (data.get("category") or "").strip()
 
     if not name:
         return {"code": 400, "msg": "菜名不能为空"}, 400
+    if len(name) > 50:
+        return {"code": 400, "msg": "菜名过长（上限 50 字符）"}, 400
 
     db = get_db()
     exist = db.execute("SELECT id FROM dishes WHERE name = ?", (name,)).fetchone()
@@ -326,19 +365,26 @@ def add_dish():
 
 @app.route("/dish/<name>", methods=["PUT"])
 def update_dish(name):
-    """更新菜品 —— 可更新分类、图片路径"""
-    data = request.get_json()
+    """更新菜品 —— 可更新分类、图片路径（后台管理接口）"""
+    denied = require_admin()
+    if denied:
+        return denied
+    data = request.get_json(silent=True)
+    if not data:
+        return {"code": 400, "msg": "请求体格式错误"}, 400
+
     db = get_db()
     exist = db.execute("SELECT id FROM dishes WHERE name = ?", (name,)).fetchone()
     if not exist:
         return {"code": 404, "msg": f"没有这道菜: {name}"}, 404
 
+    # 字段名来自白名单，值是参数化绑定，不存在 SQL 注入风险
     updates = []
     values = []
     for field in ["category", "image"]:
-        if field in data:
+        if field in data and data[field] is not None:
             updates.append(f"{field} = ?")
-            values.append(data[field])
+            values.append(str(data[field])[:200])
     if not updates:
         return {"code": 400, "msg": "没有要更新的字段"}, 400
 
@@ -350,6 +396,9 @@ def update_dish(name):
 
 @app.route("/dish/<name>", methods=["DELETE"])
 def delete_dish(name):
+    denied = require_admin()
+    if denied:
+        return denied
     db = get_db()
     result = db.execute("DELETE FROM dishes WHERE name = ?", (name,))
     db.commit()
@@ -360,10 +409,25 @@ def delete_dish(name):
 
 @app.route("/order", methods=["POST"])
 def make_order():
-    data = request.get_json()
-    dish_name = data.get("dish_name")
+    data = request.get_json(silent=True)
+    if not data:
+        return {"code": 400, "msg": "请求体格式错误"}, 400
+    dish_name = (data.get("dish_name") or "").strip()
     quantity = data.get("quantity", 1)
     note = data.get("note", "")
+
+    # 输入校验：防止类型混淆、超范围数值与超长文本写入数据库
+    if not dish_name:
+        return {"code": 400, "msg": "菜名不能为空"}, 400
+    if len(dish_name) > 50:
+        return {"code": 400, "msg": "菜名过长（上限 50 字符）"}, 400
+    if isinstance(quantity, bool) or not isinstance(quantity, int):
+        return {"code": 400, "msg": "数量必须为整数"}, 400
+    if quantity < 1 or quantity > 999:
+        return {"code": 400, "msg": "数量需在 1-999 之间"}, 400
+    if not isinstance(note, str) or len(note) > 500:
+        return {"code": 400, "msg": "备注不合法或过长（上限 500 字符）"}, 400
+
     db = get_db()
     dish = db.execute("SELECT id FROM dishes WHERE name = ?", (dish_name,)).fetchone()
     if not dish:
@@ -400,14 +464,20 @@ def get_orders():
 @app.route("/clear-orders", methods=["POST"])
 def clear_orders():
     db = get_db()
-    # 支持按日期清除当日记录（采购清单「换菜」用）；不传 date 则清空全部（兼容旧调用）
+    # 支持按日期清除当日记录（小程序「采购清单-清除当日」功能，公开可用）
     data = request.get_json(silent=True) or {}
     date = data.get("date")
     if date:
+        if not isinstance(date, str) or len(date) > 20 or ".." in date:
+            return {"code": 400, "msg": "日期参数不合法"}, 400
         cur = db.execute("DELETE FROM orders WHERE created_at LIKE ?", (date + "%",))
         deleted = cur.rowcount
         db.commit()
         return {"code": 200, "msg": f"已清除 {date} 的记录 {deleted} 条", "deleted": deleted}
+    # 不带 date：清空全部记录属高危操作，需要后台权限
+    denied = require_admin()
+    if denied:
+        return denied
     db.execute("DELETE FROM orders")
     db.commit()
     return {"code": 200, "msg": "记录已清空"}
@@ -426,13 +496,34 @@ def home():
             {"地址": "/dish/<菜名> (DELETE)",   "说明": "删除菜品"},
             {"地址": "/order (POST)",         "说明": "记录饮食"},
             {"地址": "/orders",               "说明": "饮食记录列表"},
-            {"地址": "/clear-orders (POST)",   "说明": "清空记录"},
+            {"地址": "/clear-orders (POST)",   "说明": "清空记录（全清需后台权限）"},
         ],
     }
+
+
+# ===== 全局错误处理（生产环境不泄露堆栈信息）=====
+@app.errorhandler(404)
+def handle_404(_e):
+    return {"code": 404, "msg": "Not Found"}, 404
+
+
+@app.errorhandler(405)
+def handle_405(_e):
+    return {"code": 405, "msg": "Method Not Allowed"}, 405
+
+
+@app.errorhandler(413)
+def handle_413(_e):
+    return {"code": 413, "msg": "请求体过大"}, 413
+
+
+@app.errorhandler(500)
+def handle_500(_e):
+    # 不向客户端暴露内部异常与堆栈
+    return {"code": 500, "msg": "服务器内部错误"}, 500
 
 
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
-    debug = os.environ.get("DEBUG", "true").lower() == "true"
-    app.run(debug=debug, host="0.0.0.0", port=port)
+    app.run(debug=app.config["DEBUG"], host="0.0.0.0", port=port)
