@@ -5,6 +5,7 @@
   <view wx:if="{{loading}}" class="loading">加载中...</view>
 
   <view wx:elif="{{empty}}" class="empty">
+    <image class="empty-img" src="../../images/cats/xiaoxia.jpg" mode="aspectFit" />
     <view class="empty-title">今天还没记录吃什么</view>
     <view class="empty-sub">先去「菜谱」选几道今天想吃的菜，会自动按菜品整理出食材清单</view>
     <button class="go-btn" bindtap="goRecord">去选菜</button>

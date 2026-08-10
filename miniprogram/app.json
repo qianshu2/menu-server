@@ -6,14 +6,14 @@
     "pages/shopping/shopping"
   ],
   "window": {
-    "navigationBarBackgroundColor": "#ff6b35",
+    "navigationBarBackgroundColor": "#F08A4B",
     "navigationBarTitleText": "小夏的美食手账",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#f5f5f5"
+    "backgroundColor": "#FBF4EE"
   },
   "tabBar": {
-    "color": "#888",
-    "selectedColor": "#ff6b35",
+    "color": "#9C8E80",
+    "selectedColor": "#F08A4B",
     "list": [
       {
         "pagePath": "pages/index/index",
@@ -28,5 +28,6 @@
         "text": "采购"
       }
     ]
-  }
+  },
+  "lazyCodeLoading": "requiredComponents"
 }

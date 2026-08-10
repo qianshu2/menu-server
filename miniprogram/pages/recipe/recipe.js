@@ -5,7 +5,10 @@ Page({
     apiBase: API,
     dish: null,
     steps: [],
-    loading: true
+    loading: true,
+    placeholder: "../../images/cats/xiaoxia.jpg",
+    imgLoaded: false,
+    imgError: false
   },
 
   onLoad(options) {
@@ -15,6 +18,7 @@ Page({
   },
 
   loadDish(name) {
+    this.setData({ imgLoaded: false, imgError: false });
     wx.request({
       url: API + "/dish/" + encodeURIComponent(name),
       success: (res) => {
@@ -33,5 +37,13 @@ Page({
         wx.showToast({ title: "加载失败", icon: "error" });
       }
     });
+  },
+
+  onImgLoad() {
+    this.setData({ imgLoaded: true });
+  },
+
+  onImgError() {
+    this.setData({ imgError: true });
   }
 });

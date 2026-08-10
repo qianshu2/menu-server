@@ -23,7 +23,8 @@ function cleanName(raw) {
   const isLatinUnit = c => /[a-z]/i.test(c) && units.includes(c.toLowerCase());
 
   // 1) 尾部描述词（适量/少许/…）
-  for (const d of desc) {
+  for (let k = 0; k < desc.length; k++) {
+    const d = desc[k];
     if (t.endsWith(d)) return t.slice(0, t.length - d.length).trim();
   }
 
@@ -34,7 +35,7 @@ function cleanName(raw) {
     // 向前跳过：尺寸(小/大/中)、数字、小数点、空白、拉丁单位(g/ml/kg…)；遇中文单位(片/块…)则停（可能是菜名结尾）
     while (j >= 0 && (isSize(t[j]) || isNum(t[j]) || t[j] === "." || t[j] === " " || t[j] === "　" || isLatinUnit(t[j]))) j--;
     const qty = t.slice(j + 1);
-    if ([...qty].some(isNum)) {
+    if (qty.split("").some(isNum)) {
       const name = t.slice(0, j + 1).trim();
       return name || t; // 防御：整串都是用量则保留原名
     }
@@ -187,9 +188,9 @@ Page({
     let bought = 0;
     const groups = this.data.groups.map(g => {
       const items = g.items.map(it =>
-        it.text === text ? { ...it, checked: !it.checked } : it
+        it.text === text ? Object.assign({}, it, { checked: !it.checked }) : it
       );
-      return { ...g, items };
+      return Object.assign({}, g, { items: items });
     });
     groups.forEach(g => g.items.forEach(it => { if (it.checked) bought++; }));
     this.setData({ groups, bought });
@@ -219,9 +220,8 @@ Page({
   },
 
   clearChecked() {
-    const groups = this.data.groups.map(g => ({
-      ...g,
-      items: g.items.map(it => ({ ...it, checked: false }))
+    const groups = this.data.groups.map(g => Object.assign({}, g, {
+      items: g.items.map(it => Object.assign({}, it, { checked: false }))
     }));
     this.setData({ groups, bought: 0 });
     wx.setStorageSync("shopping_" + this.data.today, []);
@@ -234,8 +234,8 @@ Page({
     const stapleSet = new Set(staple);
     const groups = this.data.groups.map(g => {
       if (!g.isSeasoning) return g;
-      const items = g.items.map(it => stapleSet.has(it.text) ? { ...it, checked: false } : it);
-      return { ...g, items };
+      const items = g.items.map(it => stapleSet.has(it.text) ? Object.assign({}, it, { checked: false }) : it);
+      return Object.assign({}, g, { items: items });
     });
     this.setData({ groups });
     this.persistChecked(groups);
@@ -261,19 +261,18 @@ Page({
     let targetGroups = this.data.groups;
     const hasGroup = targetGroups.some(g => g.isSeasoning);
     if (!hasGroup) {
-      targetGroups = [...targetGroups, {
+      targetGroups = targetGroups.concat([{
         dish: "🧂 我的调料",
         items: [{ text: name, checked: false, staple: false, isSeasoning: true }],
         isSeasoning: true
-      }];
+      }]);
     } else {
       targetGroups = targetGroups.map(g => {
         if (!g.isSeasoning) return g;
         if (g.items.some(it => it.text === name)) return g;
-        return {
-          ...g,
-          items: [...g.items, { text: name, checked: false, staple: false, isSeasoning: true }]
-        };
+        return Object.assign({}, g, {
+          items: g.items.concat([{ text: name, checked: false, staple: false, isSeasoning: true }])
+        });
       });
     }
 

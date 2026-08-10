@@ -1,47 +1,87 @@
 .page { display: flex; flex-direction: column; height: 100vh; }
-.header { background: #ff6b35; color: #fff; padding: 16px; text-align: center; font-size: 18px; font-weight: bold; flex-shrink: 0; }
+.header { background: #F08A4B; color: #fff; padding: 16px; text-align: center; font-size: 18px; font-weight: bold; flex-shrink: 0; }
 
 /* 左右分栏 */
 .main { display: flex; flex: 1; overflow: hidden; }
-.sidebar { width: 88px; background: #f7f6f3; height: 100%; box-sizing: border-box; padding-bottom: 200px; }
+.sidebar { width: 88px; background: #F6EEE5; height: 100%; box-sizing: border-box; padding-bottom: 64px; }
 .sidebar .cat-item { padding: 14px 4px; text-align: center; position: relative; }
 .sidebar .cat-icon { width: 46px; height: 46px; margin: 0 auto 4px; display: block; border-radius: 12px; }
-.sidebar .cat-name { font-size: 11px; color: #666; line-height: 1.2; }
+.sidebar .cat-name { font-size: 11px; color: #8a7a6b; line-height: 1.2; }
 .sidebar .cat-item.active { background: #fff; }
-.sidebar .cat-item.active .cat-name { color: #ff6b35; font-weight: bold; }
-.sidebar .cat-item.active::after { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; background: #ff6b35; }
-.dish-area { flex: 1; background: #fff; height: 100%; box-sizing: border-box; padding-bottom: 200px; }
-.section-title { padding: 12px 16px 4px; font-size: 14px; color: #888; }
-.menu-item { margin: 8px 16px; padding: 10px; background: #fff; border-radius: 10px; display: flex; align-items: center; gap: 10px; }
-.menu-img { width: 70px; height: 70px; border-radius: 8px; flex-shrink: 0; }
+.sidebar .cat-item.active .cat-name { color: #B5793F; font-weight: bold; }
+.sidebar .cat-item.active::after { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; background: #F08A4B; }
+.dish-area { flex: 1; background: #FBF4EE; height: 100%; box-sizing: border-box; padding-bottom: 64px; }
+.section-title { padding: 12px 16px 4px; font-size: 14px; color: #9C8E80; }
+
+/* 菜品卡片 —— 圆角 + 轻阴影，告别纯白平铺 */
+.menu-item {
+  margin: 10px 14px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(181, 121, 63, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 缩略图容器：统一圆角尺寸 */
+.menu-thumb { width: 72px; height: 72px; }
+.thumb-img { width: 100%; height: 100%; display: block; transition: opacity .25s ease; }
+
 .menu-info { flex: 1; min-width: 0; }
-.menu-name { font-size: 15px; font-weight: bold; margin-bottom: 4px; }
-.menu-meta { font-size: 13px; color: #ff6b35; }
-.menu-btn { background: #ff6b35; color: #fff; font-size: 12px; padding: 0 12px; border-radius: 16px; height: 30px; line-height: 30px; min-height: 0; }
+.menu-name { font-size: 15px; font-weight: bold; margin-bottom: 4px; color: #3a2f28; }
+.menu-meta { font-size: 13px; color: #F08A4B; }
+.menu-btn { background: #F08A4B; color: #fff; font-size: 12px; padding: 0 12px; border-radius: 16px; height: 30px; line-height: 30px; min-height: 0; }
 .menu-btn::after { border: none; }
 .menu-btns { display: flex; align-items: center; gap: 5px; }
 .recipe-btn { line-height: 24px; }
-.recipe-btn { background: #fff; color: #ff6b35; border: 1px solid #ff6b35; }
+.recipe-btn { background: #fff; color: #F08A4B; border: 1px solid #F08A4B; }
 .loading { text-align: center; padding: 30px; color: #aaa; }
 
-/* 今日记录 */
-.cart { position: fixed; bottom: 0; width: 100%; background: #fff; border-top: 1px solid #eee; padding: 12px 16px; box-sizing: border-box; }
-.cart-title { font-size: 13px; color: #aaa; margin-bottom: 4px; }
-.cart-empty { color: #ccc; font-size: 13px; }
+/* 今日记录 —— 浮在底部上层的可折叠栏，常驻可见，不占位 */
+.cart {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -3px 14px rgba(0,0,0,.10);
+  padding: 8px 16px 10px;
+  box-sizing: border-box;
+  z-index: 100;
+}
+.cart-bar { display: flex; justify-content: space-between; align-items: center; }
+.cart-bar-info { display: flex; align-items: center; gap: 8px; }
+.cart-title { font-size: 15px; font-weight: bold; color: #3a2f28; }
+.cart-count-badge {
+  background: #F08A4B; color: #fff; font-size: 12px;
+  min-width: 18px; height: 18px; line-height: 18px; text-align: center;
+  border-radius: 9px; padding: 0 5px;
+}
+.cart-arrow { font-size: 12px; color: #9C8E80; margin-left: 2px; }
+.submit-btn-mini {
+  background: #F08A4B; color: #fff; font-size: 14px; font-weight: bold;
+  padding: 0 18px; border-radius: 18px; height: 34px; line-height: 34px;
+  margin: 0;
+}
+.submit-btn-mini::after { border: none; }
+.cart-detail { margin-top: 8px; max-height: 40vh; overflow-y: auto; }
+.cart-title-old { font-size: 13px; color: #aaa; margin-bottom: 4px; }
+.cart-empty { color: #ccc; font-size: 13px; padding: 4px 0; }
 
 /* 今日记录项目 — 加减按钮 */
-.cart-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #f0f0f0; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #f0ece8; }
 .cart-item-name { font-size: 14px; flex: 1; }
 .cart-item-ctrl { display: flex; align-items: center; gap: 6px; }
-.qty-btn { width: 28px; height: 28px; line-height: 28px; padding: 0; background: #f0f0f0; color: #333; border-radius: 50%; font-size: 16px; text-align: center; border: none; }
-.qty-btn:active { background: #ddd; }
+.qty-btn { width: 28px; height: 28px; line-height: 28px; padding: 0; background: #f3ece6; color: #3a2f28; border-radius: 50%; font-size: 16px; text-align: center; border: none; }
+.qty-btn:active { background: #e6dccf; }
 .qty-num { font-size: 15px; font-weight: bold; min-width: 24px; text-align: center; }
-.cart-item-sub { font-size: 14px; color: #ff6b35; font-weight: bold; min-width: 50px; text-align: right; }
+.cart-item-sub { font-size: 14px; color: #F08A4B; font-weight: bold; min-width: 50px; text-align: right; }
 
 /* 备注 */
 .note-box { margin-top: 8px; }
-.note-input { width: 100%; height: 36px; padding: 0 10px; background: #f8f8f8; border-radius: 6px; font-size: 13px; box-sizing: border-box; }
+.note-input { width: 100%; height: 36px; padding: 0 10px; background: #f8f3ee; border-radius: 6px; font-size: 13px; box-sizing: border-box; }
 
 /* 记录汇总 & 保存 */
 .cart-total { font-weight: bold; font-size: 16px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; }
-.submit-btn { width: 100%; padding: 10px; background: #ff6b35; color: #fff; border-radius: 10px; font-size: 15px; font-weight: bold; margin-top: 8px; }
+.submit-btn { width: 100%; padding: 10px; background: #F08A4B; color: #fff; border-radius: 10px; font-size: 15px; font-weight: bold; margin-top: 8px; }

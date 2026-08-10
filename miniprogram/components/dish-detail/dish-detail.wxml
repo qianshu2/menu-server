@@ -1,0 +1,26 @@
+<view class="mask" wx:if="{{visible && dish}}" bindtap="close">
+  <view class="sheet" catchtap="noop">
+    <!-- 关闭按钮 -->
+    <view class="close" catchtap="close">×</view>
+
+    <!-- 菜品大图 -->
+    <view class="img-box hero-box">
+      <view wx:if="{{!heroLoaded && !heroError}}" class="skeleton"></view>
+      <image wx:if="{{!heroError}}" class="hero-img" src="{{apiBase}}{{dish.image}}" mode="aspectFill"
+             bindload="onHeroLoad" binderror="onHeroError"
+             style="opacity:{{heroLoaded ? 1 : 0}}" />
+      <image wx:else class="hero-img" src="{{placeholder}}" mode="aspectFit" />
+    </view>
+
+    <!-- 信息区 -->
+    <view class="body">
+      <view class="name">{{dish.name}}</view>
+      <view class="tag">{{dish.category}}</view>
+
+      <view class="actions">
+        <button class="btn primary" catchtap="onAdd">想吃</button>
+        <button class="btn ghost" catchtap="onRecipe">查看做法</button>
+      </view>
+    </view>
+  </view>
+</view>

@@ -2,7 +2,11 @@
 <scroll-view scroll-y class="page">
   <view class="header">饮食记录</view>
 
-  <view wx:if="{{orders.length === 0}}" class="empty">暂无记录</view>
+  <view wx:if="{{orders.length === 0}}" class="empty">
+    <image class="empty-img" src="../../images/cats/xiaoxia.jpg" mode="aspectFit" />
+    <view class="empty-title">还没有记录哦~</view>
+    <view class="empty-sub">今天想吃点什么？去「菜谱」挑几道吧</view>
+  </view>
 
   <view wx:else>
     <button class="shop-btn" bindtap="goShopping">生成今日采购清单 →</button>

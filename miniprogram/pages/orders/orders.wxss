@@ -1,6 +1,9 @@
-.page { padding-bottom: 20px; }
-.header { background: #ff6b35; color: #fff; padding: 16px; text-align: center; font-size: 18px; font-weight: bold; }
-.empty { text-align: center; padding: 50px; color: #aaa; font-size: 14px; }
+.page { padding-bottom: 20px; background: #FBF4EE; }
+.header { background: #F08A4B; color: #fff; padding: 16px; text-align: center; font-size: 18px; font-weight: bold; }
+.empty { text-align: center; padding: 50px 20px; }
+.empty-img { width: 150px; height: 188px; margin: 0 auto 12px; display: block; border-radius: 14px; background: #fff; }
+.empty-title { font-size: 16px; color: #3a2f28; margin-bottom: 8px; font-weight: bold; }
+.empty-sub { font-size: 13px; color: #9C8E80; line-height: 1.6; }
 
 .order-card { margin: 10px 16px; padding: 14px; background: #fff; border-radius: 10px; }
 .order-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -8,11 +11,11 @@
 .order-time { font-size: 11px; color: #bbb; margin-top: 4px; }
 .order-bottom { display: flex; justify-content: space-between; }
 .order-detail { font-size: 13px; color: #888; }
-.order-price { font-size: 15px; font-weight: bold; color: #ff6b35; }
+.order-price { font-size: 15px; font-weight: bold; color: #F08A4B; }
 .order-note { font-size: 12px; color: #999; margin-top: 4px; padding: 4px 8px; background: #fafafa; border-radius: 4px; }
 .summary { margin: 16px; padding: 14px; background: #fff; border-radius: 10px; text-align: center; font-size: 14px; color: #666; }
 
-.shop-btn { margin: 10px 16px 0; background: #ff6b35; color: #fff; font-size: 14px; border-radius: 22px; }
+.shop-btn { margin: 10px 16px 0; background: #F08A4B; color: #fff; font-size: 14px; border-radius: 22px; }
 .shop-btn::after { border: none; }
 
 .clear-day-btn { margin: 10px 16px 0; background: #fff; color: #e74c3c; font-size: 13px; border-radius: 22px; border: 1px solid #e74c3c; }

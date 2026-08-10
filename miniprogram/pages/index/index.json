@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "小夏的美食手账"
+  "navigationBarTitleText": "小夏的美食手账",
+  "usingComponents": {
+    "dish-detail": "../../components/dish-detail/dish-detail"
+  }
 }

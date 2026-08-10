@@ -15,41 +15,66 @@
       </view>
     </scroll-view>
 
-    <!-- 右侧菜品 -->
-    <scroll-view scroll-y class="dish-area">
-      <view class="section-title">{{activeCat}}</view>
-      <view class="menu-item" wx:for="{{grouped[activeCat]}}" wx:for-item="item" wx:key="name">
-        <image class="menu-img" src="{{apiBase}}{{item.image}}" mode="aspectFill" />
-        <view class="menu-info">
-          <view class="menu-name">{{item.name}}</view>
+    <!-- 右侧菜品（所有分类连续排列，填满空白区域） -->
+    <scroll-view scroll-y class="dish-area" scroll-into-view="{{scrollTarget}}" scroll-with-animation bindscroll="onScroll">
+      <block wx:for="{{dishList}}" wx:key="name">
+        <view wx:if="{{item.showTitle}}" id="cat{{item.catIndex}}" class="cat-anchor section-title">{{item.category}}</view>
+        <view class="menu-item" bindtap="openDetail" data-name="{{item.name}}">
+          <view class="img-box menu-thumb">
+            <view wx:if="{{!item.imgLoaded && !item.imgError}}" class="skeleton"></view>
+            <image wx:if="{{!item.imgError}}" class="thumb-img" src="{{apiBase}}{{item.image}}" mode="aspectFill"
+                   bindload="onImgLoad" binderror="onImgError" data-idx="{{index}}"
+                   style="opacity:{{item.imgLoaded ? 1 : 0}}" />
+            <image wx:else class="thumb-img" src="{{placeholder}}" mode="aspectFit" />
+          </view>
+          <view class="menu-info">
+            <view class="menu-name">{{item.name}}</view>
+          </view>
+          <view class="menu-btns">
+            <button class="menu-btn" catchtap="addToCart" data-name="{{item.name}}">想吃</button>
+            <button class="menu-btn recipe-btn" catchtap="goToRecipe" data-name="{{item.name}}">做法</button>
+          </view>
         </view>
-        <view class="menu-btns">
-          <button class="menu-btn" bindtap="addToCart" data-name="{{item.name}}">想吃</button>
-          <button class="menu-btn recipe-btn" bindtap="goToRecipe" data-name="{{item.name}}">做法</button>
-        </view>
-      </view>
+      </block>
     </scroll-view>
   </view>
 </view>
 
 <view class="cart">
-  <view class="cart-title">今天想吃的</view>
-  <view wx:if="{{cartCount === 0}}" class="cart-empty">还没想好吃什么</view>
-  <view wx:else>
-    <view class="cart-item" wx:for="{{cartList}}" wx:key="dish_name">
-      <text class="cart-item-name">{{item.dish_name}}</text>
-      <view class="cart-item-ctrl">
-        <button class="qty-btn" bindtap="decreaseQty" data-name="{{item.dish_name}}">-</button>
-        <text class="qty-num">{{item.quantity}}</text>
-        <button class="qty-btn" bindtap="increaseQty" data-name="{{item.dish_name}}">+</button>
-      </view>
+  <!-- 常驻浮层栏：随时可见已选数量，随时可记下来 -->
+  <view class="cart-bar" bindtap="toggleCart">
+    <view class="cart-bar-info">
+      <text class="cart-title">今天想吃的</text>
+      <text class="cart-count-badge">{{cartCount}}</text>
+      <text class="cart-arrow">{{cartExpanded ? '收起' : '展开'}}</text>
     </view>
-
-    <!-- 备忘 -->
-    <view class="note-box">
-      <input class="note-input" placeholder="添加备忘..." value="{{note}}" bindinput="onNoteInput" />
-    </view>
-
-    <button class="submit-btn" bindtap="submitOrder">记下来</button>
+    <button class="submit-btn-mini" catchtap="submitOrder">记下来</button>
   </view>
+
+  <!-- 展开后的明细 -->
+  <view wx:if="{{cartExpanded}}" class="cart-detail">
+    <view wx:if="{{cartCount === 0}}" class="cart-empty">还没想好吃什么</view>
+    <block wx:else>
+      <view class="cart-item" wx:for="{{cartList}}" wx:key="dish_name">
+        <text class="cart-item-name">{{item.dish_name}}</text>
+        <view class="cart-item-ctrl">
+          <button class="qty-btn" catchtap="decreaseQty" data-name="{{item.dish_name}}">-</button>
+          <text class="qty-num">{{item.quantity}}</text>
+          <button class="qty-btn" catchtap="increaseQty" data-name="{{item.dish_name}}">+</button>
+        </view>
+      </view>
+      <view class="note-box">
+        <input class="note-input" placeholder="添加备忘..." value="{{note}}" bindinput="onNoteInput" />
+      </view>
+    </block>
+  </view>
+
+  <!-- 菜品详情弹层 -->
+  <dish-detail
+    visible="{{detailVisible}}"
+    dish="{{detailDish}}"
+    bind:close="closeDetail"
+    bind:add="onDetailAdd"
+    bind:recipe="onDetailRecipe"
+  />
 </view>

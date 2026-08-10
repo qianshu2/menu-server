@@ -3,7 +3,12 @@
   <view wx:if="{{loading}}" class="loading">加载中...</view>
 
   <view wx:elif="{{dish}}" class="detail">
-    <image class="dish-img" src="{{apiBase}}{{dish.image}}" mode="aspectFill" />
+    <view class="img-box dish-hero">
+      <view wx:if="{{!imgLoaded && !imgError}}" class="skeleton"></view>
+      <image wx:if="{{!imgError}}" class="dish-img" src="{{apiBase}}{{dish.image}}" mode="aspectFill"
+             bindload="onImgLoad" binderror="onImgError" style="opacity:{{imgLoaded ? 1 : 0}}" />
+      <image wx:else class="dish-img" src="{{placeholder}}" mode="aspectFit" />
+    </view>
     <view class="dish-name">{{dish.name}}</view>
     <view class="dish-cat">{{dish.category}}</view>
 
