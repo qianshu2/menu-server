@@ -1,3 +1,5 @@
+const { getBase } = require("../../utils/request.js");
+
 Component({
   properties: {
     visible: {
@@ -11,7 +13,7 @@ Component({
   },
 
   data: {
-    apiBase: getApp().globalData.apiBase,
+    apiBase: getBase(),
     placeholder: "../../images/cats/xiaoxia.jpg",
     heroLoaded: false,
     heroError: false

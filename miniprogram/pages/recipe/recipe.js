@@ -1,8 +1,8 @@
-const API = getApp().globalData.apiBase;
+const { request, getBase } = require("../../utils/request.js");
 
 Page({
   data: {
-    apiBase: API,
+    apiBase: getBase(),
     dish: null,
     steps: [],
     loading: true,
@@ -17,26 +17,23 @@ Page({
     this.loadDish(name);
   },
 
-  loadDish(name) {
+  async loadDish(name) {
     this.setData({ imgLoaded: false, imgError: false });
-    wx.request({
-      url: API + "/dish/" + encodeURIComponent(name),
-      success: (res) => {
-        if (res.data.code === 200) {
-          const dish = res.data.data;
-          // 步骤按换行拆成数组，方便逐条展示
-          const steps = (dish.steps || "").split("\n").filter(s => s.trim());
-          this.setData({ dish, steps, loading: false });
-        } else {
-          this.setData({ loading: false });
-          wx.showToast({ title: "暂无菜谱", icon: "none" });
-        }
-      },
-      fail: () => {
+    try {
+      const res = await request("/dish/" + encodeURIComponent(name));
+      if (res.data.code === 200) {
+        const dish = res.data.data;
+        // 步骤按换行拆成数组，方便逐条展示
+        const steps = (dish.steps || "").split("\n").filter(s => s.trim());
+        this.setData({ dish, steps, loading: false });
+      } else {
         this.setData({ loading: false });
-        wx.showToast({ title: "加载失败", icon: "error" });
+        wx.showToast({ title: "暂无菜谱", icon: "none" });
       }
-    });
+    } catch (e) {
+      this.setData({ loading: false });
+      // 网络错误由 request 统一弹 Toast
+    }
   },
 
   onImgLoad() {

@@ -16,7 +16,7 @@
     </scroll-view>
 
     <!-- 右侧菜品（所有分类连续排列，填满空白区域） -->
-    <scroll-view scroll-y class="dish-area" scroll-into-view="{{scrollTarget}}" scroll-with-animation bindscroll="onScroll">
+    <scroll-view scroll-y class="dish-area" scroll-into-view="{{scrollTarget}}" scroll-with-animation>
       <block wx:for="{{dishList}}" wx:key="name">
         <view wx:if="{{item.showTitle}}" id="cat{{item.catIndex}}" class="cat-anchor section-title">{{item.category}}</view>
         <view class="menu-item" bindtap="openDetail" data-name="{{item.name}}">

@@ -1,4 +1,4 @@
-const API = getApp().globalData.apiBase;
+const { request, getBase } = require("../../utils/request.js");
 
 // 取本地（中国时区）今天的日期字符串 YYYY-MM-DD
 function todayStr() {
@@ -45,7 +45,7 @@ function cleanName(raw) {
 
 Page({
   data: {
-    apiBase: API,
+    apiBase: getBase(),
     today: "",
     groups: [],     // [{ dish, items: [{ text, checked, main, staple, isSeasoning }], isSeasoning }]
     bought: 0,
@@ -64,7 +64,7 @@ Page({
     this.loadShopping();
   },
 
-  loadShopping() {
+  async loadShopping() {
     const today = todayStr();
     const checkedList = wx.getStorageSync("shopping_" + today) || [];
     const checkedSet = new Set(checkedList);
@@ -72,101 +72,88 @@ Page({
     const staple = wx.getStorageSync("seasoning_staple") || [];
     const stapleSet = new Set(staple);
 
-    wx.request({
-      url: API + "/orders",
-      success: (res) => {
-        const all = (res.data && res.data.data) || [];
-        // 仅取「今天」的记录（created_at 形如 2026-07-14 10:00:00）
-        // 注：后端按服务器时间存储，若在凌晨 0-8 点记录可能存在跨日偏差
-        const todays = all.filter(o => (o.created_at || "").startsWith(today));
+    try {
+      const res = await request("/orders?date=" + today);
+      const all = (res.data && res.data.data) || [];
+      // 仅取「今天」的记录（created_at 形如 2026-07-14 10:00:00）
+      // 注：后端按服务器时间存储，若在凌晨 0-8 点记录可能存在跨日偏差
+      const todays = all.filter(o => (o.created_at || "").startsWith(today));
 
-        // 既无今日菜品、也无调料库时，才算空
-        if (todays.length === 0 && lib.length === 0) {
-          this.setData({ today, loading: false, empty: true, groups: [], bought: 0, total: 0, dishCount: 0, seasoningLib: lib });
-          return;
-        }
-
-        // 保持菜品出现顺序（去重）
-        const dishNames = [];
-        const seenDish = new Set();
-        todays.forEach(o => {
-          if (!seenDish.has(o.dish_name)) {
-            seenDish.add(o.dish_name);
-            dishNames.push(o.dish_name);
-          }
-        });
-
-        this.fetchRecipes(dishNames, today, { checkedSet, lib, stapleSet });
-      },
-      fail: () => {
-        wx.showToast({ title: "加载失败", icon: "error" });
-        this.setData({ loading: false });
+      // 既无今日菜品、也无调料库时，才算空
+      if (todays.length === 0 && lib.length === 0) {
+        this.setData({ today, loading: false, empty: true, groups: [], bought: 0, total: 0, dishCount: 0, seasoningLib: lib });
+        return;
       }
-    });
+
+      // 保持菜品出现顺序（去重）
+      const dishNames = [];
+      const seenDish = new Set();
+      todays.forEach(o => {
+        if (!seenDish.has(o.dish_name)) {
+          seenDish.add(o.dish_name);
+          dishNames.push(o.dish_name);
+        }
+      });
+
+      this.fetchRecipes(dishNames, today, { checkedSet, lib, stapleSet });
+    } catch (e) {
+      wx.showToast({ title: "加载失败", icon: "error" });
+      this.setData({ loading: false });
+    }
   },
 
-  // 逐道菜拉取食材，按菜品分组；每道菜第一个食材视为主材，排在最前
-  fetchRecipes(names, today, ctx) {
-    let done = 0;
-    const total = names.length;
-    const groups = [];
+  // 批量拉取各道菜食材，按菜品分组；每道菜第一个食材视为主材，排在最前
+  async fetchRecipes(names, today, ctx) {
+    // 一次请求拿全部菜谱，替代原先逐道菜 GET /dish/<name> 的 N+1 请求
+    let recipeMap = {};
+    if (names.length > 0) {
+      const namesParam = names.map(encodeURIComponent).join(",");
+      try {
+        const res = await request("/dishes/recipes?names=" + namesParam);
+        recipeMap = (res.data && res.data.data) || {};
+      } catch (e) {
+        // 菜谱拉取失败不阻断整体，下方按空处理
+      }
+    }
 
-    const finish = () => {
-      // 追加「我的调料」分组
-      const seasoningGroup = this.buildSeasoningGroup(ctx);
-      if (seasoningGroup) groups.push(seasoningGroup);
+    const groups = names.map(name => {
+      const d = recipeMap[name] || {};
+      const recipe = d.recipe || "";
+      const parts = recipe.split(/[、，]/).map(s => s.trim()).filter(s => s);
+      // 清洗用量后缀并去重(同一道菜内)，主材(首个原始项)保持置顶；丢弃清洗后为空的项
+      const seen = new Set();
+      const items = parts
+        .map((p, i) => ({ clean: cleanName(p), main: i === 0 }))
+        .filter(o => o.clean)
+        .filter(o => { if (seen.has(o.clean)) return false; seen.add(o.clean); return true; })
+        .map(o => ({
+          text: o.clean,
+          checked: ctx.checkedSet.has(o.clean),
+          main: o.main
+        }));
+      return { dish: name, items, isSeasoning: false };
+    });
 
-      let bought = 0, totalCount = 0, hasStaple = false;
-      groups.forEach(g => g.items.forEach(it => {
-        totalCount++;
-        if (it.checked) bought++;
-        if (it.staple) hasStaple = true;
-      }));
-      this.setData({
-        groups,
-        today,
-        dishCount: groups.filter(g => !g.isSeasoning).length,
-        bought,
-        total: totalCount,
-        loading: false,
-        empty: false,
-        seasoningLib: ctx.lib,
-        showStapleHint: hasStaple
-      });
-    };
+    // 追加「我的调料」分组
+    const seasoningGroup = this.buildSeasoningGroup(ctx);
+    if (seasoningGroup) groups.push(seasoningGroup);
 
-    if (total === 0) { finish(); return; }
-
-    names.forEach(name => {
-      wx.request({
-        url: API + "/dish/" + encodeURIComponent(name),
-        success: (r) => {
-          let items = [];
-          if (r.data && r.data.code === 200) {
-            const recipe = r.data.data.recipe || "";
-            const parts = recipe.split(/[、，]/).map(s => s.trim()).filter(s => s);
-            // 清洗用量后缀并去重(同一道菜内)，主材(首个原始项)保持置顶；丢弃清洗后为空的项
-            const seen = new Set();
-            items = parts
-              .map((p, i) => ({ clean: cleanName(p), main: i === 0 }))
-              .filter(o => o.clean)
-              .filter(o => { if (seen.has(o.clean)) return false; seen.add(o.clean); return true; })
-              .map(o => ({
-                text: o.clean,
-                checked: ctx.checkedSet.has(o.clean),
-                main: o.main
-              }));
-          }
-          groups.push({ dish: name, items, isSeasoning: false });
-          done++;
-          if (done === total) finish();
-        },
-        fail: () => {
-          groups.push({ dish: name, items: [], isSeasoning: false });
-          done++;
-          if (done === total) finish();
-        }
-      });
+    let bought = 0, totalCount = 0, hasStaple = false;
+    groups.forEach(g => g.items.forEach(it => {
+      totalCount++;
+      if (it.checked) bought++;
+      if (it.staple) hasStaple = true;
+    }));
+    this.setData({
+      groups,
+      today,
+      dishCount: groups.filter(g => !g.isSeasoning).length,
+      bought,
+      total: totalCount,
+      loading: false,
+      empty: false,
+      seasoningLib: ctx.lib,
+      showStapleHint: hasStaple
     });
   },
 
@@ -306,18 +293,15 @@ Page({
     });
   },
 
-  doClearToday() {
-    wx.request({
-      url: API + "/clear-orders",
-      method: "POST",
-      data: { date: this.data.today },
-      success: () => {
-        wx.removeStorageSync("shopping_" + this.data.today);
-        wx.showToast({ title: "已清除，去重新选菜", icon: "none" });
-        this.loadShopping(); // 重新生成：菜品清空，但调料库仍在
-      },
-      fail: () => wx.showToast({ title: "清除失败", icon: "error" })
-    });
+  async doClearToday() {
+    try {
+      await request("/clear-orders", { method: "POST", data: { date: this.data.today } });
+      wx.removeStorageSync("shopping_" + this.data.today);
+      wx.showToast({ title: "已清除，去重新选菜", icon: "none" });
+      this.loadShopping(); // 重新生成：菜品清空，但调料库仍在
+    } catch (e) {
+      wx.showToast({ title: "清除失败", icon: "error" });
+    }
   },
 
   goRecord() {

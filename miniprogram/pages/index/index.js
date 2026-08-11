@@ -1,4 +1,4 @@
-const API = getApp().globalData.apiBase;
+const { request, getBase } = require("../../utils/request.js");
 
 const CAT_ICONS = {
   '烧菜': '../../images/cats/shaocai.png',
@@ -16,7 +16,7 @@ const DEFAULT_ICON = '../../images/cats/default.png';
 
 Page({
   data: {
-    apiBase: API,
+    apiBase: getBase(),
     menu: [],
     categories: [],
     grouped: {},
@@ -43,83 +43,79 @@ Page({
     this.renderCart();
   },
 
-  loadMenu() {
-    wx.request({
-      url: API + "/menu",
-      success: (res) => {
-        const menu = res.data.data;
-        const categories = [];
-        const grouped = {};
-        menu.forEach(dish => {
-          if (!grouped[dish.category]) {
-            grouped[dish.category] = [];
-            categories.push(dish.category);
-          }
-          grouped[dish.category].push(dish);
+  async loadMenu() {
+    try {
+      const res = await request("/menu");
+      const menu = res.data.data;
+      const categories = [];
+      const grouped = {};
+      menu.forEach(dish => {
+        if (!grouped[dish.category]) {
+          grouped[dish.category] = [];
+          categories.push(dish.category);
+        }
+        grouped[dish.category].push(dish);
+      });
+      // 平铺所有分类的菜品，每个分类首菜标记 showTitle，并记录分类序号(用于 ascii 锚点 id)
+      const catIndexMap = {};
+      categories.forEach((c, idx) => { catIndexMap[c] = idx; });
+      const dishList = [];
+      categories.forEach(c => {
+        grouped[c].forEach((d, i) => {
+          dishList.push(Object.assign({}, d, {
+            showTitle: i === 0,
+            catIndex: catIndexMap[c],
+            imgLoaded: false,
+            imgError: false
+          }));
         });
-        // 平铺所有分类的菜品，每个分类首菜标记 showTitle，并记录分类序号(用于 ascii 锚点 id)
-        const catIndexMap = {};
-        categories.forEach((c, idx) => { catIndexMap[c] = idx; });
-        const dishList = [];
-        categories.forEach(c => {
-          grouped[c].forEach((d, i) => {
-            dishList.push(Object.assign({}, d, {
-              showTitle: i === 0,
-              catIndex: catIndexMap[c],
-              imgLoaded: false,
-              imgError: false
-            }));
-          });
-        });
-        const catList = categories.map(c => ({
-          name: c,
-          icon: CAT_ICONS[c] || DEFAULT_ICON
-        }));
-        this.setData(
-          { menu, categories, grouped, dishList, catList, activeCat: categories[0] || "", loading: false },
-          () => {
-            this.measureAnchors();
-            // 图片异步加载会改变布局高度，延迟再测一次，保证滚动高亮准确
-            if (this._initMeasure) clearTimeout(this._initMeasure);
-            this._initMeasure = setTimeout(() => this.measureAnchors(), 500);
-          }
-        );
-      },
-      fail: () => {
-        wx.showToast({ title: "加载失败", icon: "error" });
-        this.setData({ loading: false });
+      });
+      const catList = categories.map(c => ({
+        name: c,
+        icon: CAT_ICONS[c] || DEFAULT_ICON
+      }));
+      this.setData(
+        { menu, categories, grouped, dishList, catList, activeCat: categories[0] || "", loading: false },
+        () => {
+          // 菜单渲染完成后建立滚动联动观察器（替代原来手动测量 + 魔法数字 setTimeout）
+          this.observeAnchors();
+        }
+      );
+    } catch (e) {
+      // 网络错误由 request 统一弹 Toast，这里只结束 loading
+      this.setData({ loading: false });
+    }
+  },
+
+  // 用 IntersectionObserver 监听各分类锚点相对菜品滚动区的进入/离开，
+  // 实现滚动联动高亮。相比手动 measureAnchors + onScroll 算 boundingRect，
+  // 它会在图片异步加载导致布局变化时自动重算，无需反复 setTimeout 补测。
+  observeAnchors() {
+    if (this._io) {
+      this._io.disconnect();
+      this._io = null;
+    }
+    const io = wx.createIntersectionObserver(this, { thresholds: [0] });
+    this._io = io;
+    io.relativeTo(".dish-area").observe(".cat-anchor", (res) => {
+      // 某锚点重新进入可视区时，将其对应分类设为高亮（滚动到顶部的那段）
+      if (res.intersectionRatio <= 0) return;
+      const id = res.id || "";
+      if (!id.startsWith("cat")) return;
+      const idx = parseInt(id.slice(3), 10);
+      const cat = this.data.categories[idx];
+      if (cat && cat !== this.data.activeCat) {
+        this.setData({ activeCat: cat });
       }
     });
   },
 
-  // 渲染完成后测量各分类锚点相对菜品区的位置，供滚动联动高亮
-  measureAnchors() {
-    const q = wx.createSelectorQuery().in(this);
-    q.select(".dish-area").boundingClientRect();
-    q.selectAll(".cat-anchor").boundingClientRect();
-    q.exec((res) => {
-      if (!res || !res[0] || !res[1] || !res[1].length) return;
-      const viewTop = res[0].top;
-      const cats = this.data.categories;
-      this._anchors = res[1].map(rect => {
-        const idx = parseInt(rect.id.replace(/^cat/, ""), 10);
-        return {
-          cat: cats[idx] || "",
-          index: idx,
-          offset: rect.top - viewTop
-        };
-      });
-    });
-  },
-
-  // 图片异步加载会改变布局高度，加载完成后重新测量锚点，保证滚动高亮准确
   onImgLoad(e) {
     const idx = e.currentTarget.dataset.idx;
     if (idx !== undefined) {
       this.setData({ ['dishList[' + idx + '].imgLoaded']: true });
     }
-    if (this._remeasure) clearTimeout(this._remeasure);
-    this._remeasure = setTimeout(() => this.measureAnchors(), 200);
+    // 图片加载导致高度变化时，IntersectionObserver 会自动重算，无需手动补测
   },
 
   // 单张菜品图加载失败 → 标记为缺图，改用小夏占位图
@@ -130,19 +126,8 @@ Page({
     }
   },
 
-  // 滚动时根据可见位置更新左侧高亮分类
-  onScroll(e) {
-    if (!this._anchors || !this._anchors.length) return;
-    const top = e.detail.scrollTop;
-    let current = this._anchors[0].cat;
-    for (let k = 0; k < this._anchors.length; k++) {
-      const a = this._anchors[k];
-      if (top >= a.offset - 4) current = a.cat;
-      else break;
-    }
-    if (current !== this.data.activeCat) {
-      this.setData({ activeCat: current });
-    }
+  onUnload() {
+    if (this._io) this._io.disconnect();
   },
 
   // ===== 左侧分类切换 =====
@@ -256,7 +241,7 @@ Page({
 
   // ===== 保存记录 =====
 
-  submitOrder() {
+  async submitOrder() {
     if (this.data.cartCount === 0) {
       wx.showToast({ title: "请先选几道菜！", icon: "none" });
       return;
@@ -271,38 +256,24 @@ Page({
       }
     }
 
-    let done = 0;
-    const total = orders.length;
-    let errors = [];
+    wx.showLoading({ title: "记录中...", mask: true });
+    // 并发提交；allSettled 保证即使部分失败也能拿到整体结果，而非中途 reject
+    const results = await Promise.allSettled(
+      orders.map(o => request("/order", { method: "POST", data: o, showError: false }))
+    );
+    wx.hideLoading();
 
-    orders.forEach(o => {
-      wx.request({
-        url: API + "/order",
-        method: "POST",
-        data: o,
-        success: () => {
-          done++;
-          if (done === total) this.finishOrder(errors);
-        },
-        fail: () => {
-          done++;
-          errors.push(o.dish_name);
-          if (done === total) this.finishOrder(errors);
-        }
-      });
-    });
-  },
-
-  finishOrder(errors) {
-    if (errors.length > 0) {
-      wx.showToast({ title: "记录失败", icon: "error" });
-    } else {
+    const failed = results.filter(r => r.status === "rejected").length;
+    if (failed === 0) {
       wx.showToast({ title: "已生成采购清单", icon: "success" });
       this.setData({ cart: {}, cartList: [], cartCount: 0, note: "", cartExpanded: false });
       // 记录完成后自动跳到采购清单，方便直接买菜
       setTimeout(() => {
         wx.switchTab({ url: "/pages/shopping/shopping" });
       }, 800);
+    } else {
+      // 部分失败：保留购物车，便于用户重试，避免已成功的记录被「假装成功清空」
+      wx.showToast({ title: `有 ${failed} 道菜记录失败`, icon: "none" });
     }
   }
 });

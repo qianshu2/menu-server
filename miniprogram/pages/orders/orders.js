@@ -1,4 +1,4 @@
-const API = getApp().globalData.apiBase;
+const { request } = require("../../utils/request.js");
 
 function todayStr() {
   const d = new Date();
@@ -17,20 +17,17 @@ Page({
     this.loadOrders();
   },
 
-  loadOrders() {
-    wx.request({
-      url: API + "/orders",
-      success: (res) => {
-        const d = res.data;
-        this.setData({
-          orders: d.data,
-          count: d.count
-        });
-      },
-      fail: () => {
-        wx.showToast({ title: "加载失败", icon: "error" });
-      }
-    });
+  async loadOrders() {
+    try {
+      const res = await request("/orders");
+      const d = res.data;
+      this.setData({
+        orders: d.data,
+        count: d.count
+      });
+    } catch (e) {
+      // 网络错误由 request 统一弹 Toast
+    }
   },
 
   goShopping() {
@@ -44,18 +41,15 @@ Page({
       title: "清除当日记录",
       content: "将删除今天记录的所有菜品，方便重新选菜。确定吗？",
       confirmColor: "#ff6b35",
-      success: (res) => {
+      success: async (res) => {
         if (!res.confirm) return;
-        wx.request({
-          url: API + "/clear-orders",
-          method: "POST",
-          data: { date: today },
-          success: () => {
-            wx.showToast({ title: "已清除当日", icon: "none" });
-            this.loadOrders();
-          },
-          fail: () => wx.showToast({ title: "清除失败", icon: "error" })
-        });
+        try {
+          await request("/clear-orders", { method: "POST", data: { date: today } });
+          wx.showToast({ title: "已清除当日", icon: "none" });
+          this.loadOrders();
+        } catch (e) {
+          wx.showToast({ title: "清除失败", icon: "error" });
+        }
       }
     });
   }

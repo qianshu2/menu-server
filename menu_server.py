@@ -267,7 +267,10 @@ def serve_image(filename):
     allowed_ext = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg")
     if not filename.lower().endswith(allowed_ext):
         return {"code": 403, "msg": "禁止访问"}, 403
-    return send_from_directory(IMG_DIR, filename)
+    resp = send_from_directory(IMG_DIR, filename)
+    # 菜品图几乎不变，缓存 1 天，减少重复请求、缓解 Render 冷启动延迟
+    resp.headers["Cache-Control"] = "public, max-age=86400"
+    return resp
 
 
 # ===== Class 模型 =====
@@ -331,6 +334,41 @@ def get_dish(name):
         recipe, steps = RECIPES[name]
     dish = Dish(row["name"], row["category"], row["image"], recipe, steps)
     return {"code": 200, "data": dish.to_dict()}
+
+
+@app.route("/dishes/recipes")
+def get_dishes_recipes():
+    """批量获取多道菜的菜谱（食材 + 做法）。
+
+    小程序「采购清单」页原先需逐道菜发 GET /dish/<name>（N+1 请求），
+    改为一次传入多个菜名，显著降低请求数与首屏耗时。
+    参数：names=菜名1,菜名2（英文逗号分隔，最多 50 个）
+    """
+    names_param = request.args.get("names", "")
+    name_list = [n for n in names_param.split(",") if n]
+    if len(name_list) > 50:
+        return {"code": 400, "msg": "一次最多查询 50 道菜"}, 400
+
+    db = get_db()
+    result = {}
+    for name in name_list:
+        row = db.execute(
+            "SELECT name, category, image, recipe, steps FROM dishes WHERE name = ?", (name,)
+        ).fetchone()
+        if not row:
+            continue
+        recipe = row["recipe"] or ""
+        steps = row["steps"] or ""
+        if not recipe and name in RECIPES:
+            recipe, steps = RECIPES[name]
+        result[name] = {
+            "name": row["name"],
+            "category": row["category"],
+            "image": row["image"] or f"/img/{row['name']}.png",
+            "recipe": recipe,
+            "steps": steps,
+        }
+    return {"code": 200, "data": result}
 
 
 @app.route("/dish", methods=["POST"])
@@ -450,9 +488,18 @@ def make_order():
 @app.route("/orders")
 def get_orders():
     db = get_db()
-    rows = db.execute(
-        "SELECT dish_name, quantity, created_at, note FROM orders ORDER BY id DESC"
-    ).fetchall()
+    # 支持按日期过滤（?date=YYYY-MM-DD），供小程序「采购清单」只取今日记录，
+    # 避免把历史记录全量拉回再在客户端按 created_at 前缀过滤（存在跨日/时区偏差）。
+    date = request.args.get("date")
+    sql = "SELECT dish_name, quantity, created_at, note FROM orders"
+    params = ()
+    if date:
+        if not isinstance(date, str) or len(date) > 20 or ".." in date:
+            return {"code": 400, "msg": "日期参数不合法"}, 400
+        sql += " WHERE created_at LIKE ?"
+        params = (date + "%",)
+    sql += " ORDER BY id DESC"
+    rows = db.execute(sql, params).fetchall()
     order_list = []
     for r in rows:
         order = Order(r["dish_name"], r["quantity"], r["created_at"])
