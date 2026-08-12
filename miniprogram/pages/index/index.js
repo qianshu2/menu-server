@@ -36,6 +36,7 @@ Page({
   },
 
   onLoad() {
+    this.restoreCart();
     this.loadMenu();
   },
 
@@ -43,48 +44,78 @@ Page({
     this.renderCart();
   },
 
-  async loadMenu() {
+  // 恢复上次未提交的购物车（避免杀进程/重进后丢失）
+  restoreCart() {
+    const cart = wx.getStorageSync("cart") || {};
+    this.setData({ cart });
+  },
+
+  // 持久化购物车到本地
+  persistCart() {
+    wx.setStorageSync("cart", this.data.cart);
+  },
+
+  async loadMenu(forceRefresh = false) {
+    // 先用本地缓存秒开，再后台静默刷新（配合后端 /img 的 1 天缓存头，首屏更快）
+    const cache = wx.getStorageSync("menu_cache");
+    if (cache && cache.length && !forceRefresh) {
+      this.applyMenu(cache);
+    }
     try {
       const res = await request("/menu");
       const menu = res.data.data;
-      const categories = [];
-      const grouped = {};
-      menu.forEach(dish => {
-        if (!grouped[dish.category]) {
-          grouped[dish.category] = [];
-          categories.push(dish.category);
-        }
-        grouped[dish.category].push(dish);
-      });
-      // 平铺所有分类的菜品，每个分类首菜标记 showTitle，并记录分类序号(用于 ascii 锚点 id)
-      const catIndexMap = {};
-      categories.forEach((c, idx) => { catIndexMap[c] = idx; });
-      const dishList = [];
-      categories.forEach(c => {
-        grouped[c].forEach((d, i) => {
-          dishList.push(Object.assign({}, d, {
-            showTitle: i === 0,
-            catIndex: catIndexMap[c],
-            imgLoaded: false,
-            imgError: false
-          }));
-        });
-      });
-      const catList = categories.map(c => ({
-        name: c,
-        icon: CAT_ICONS[c] || DEFAULT_ICON
-      }));
-      this.setData(
-        { menu, categories, grouped, dishList, catList, activeCat: categories[0] || "", loading: false },
-        () => {
-          // 菜单渲染完成后建立滚动联动观察器（替代原来手动测量 + 魔法数字 setTimeout）
-          this.observeAnchors();
-        }
-      );
+      wx.setStorageSync("menu_cache", menu);
+      this.applyMenu(menu);
     } catch (e) {
-      // 网络错误由 request 统一弹 Toast，这里只结束 loading
-      this.setData({ loading: false });
+      // 网络错误由 request 统一弹 Toast；若已有缓存渲染则保留，不覆盖为空
+      if (!this.data.menu || this.data.menu.length === 0) {
+        this.setData({ loading: false });
+      }
     }
+  },
+
+  // 把菜单按分类分组并渲染（缓存命中与网络刷新共用，避免重复分组逻辑）
+  applyMenu(menu) {
+    const categories = [];
+    const grouped = {};
+    menu.forEach(dish => {
+      if (!grouped[dish.category]) {
+        grouped[dish.category] = [];
+        categories.push(dish.category);
+      }
+      grouped[dish.category].push(dish);
+    });
+    // 平铺所有分类的菜品，每个分类首菜标记 showTitle，并记录分类序号(用于 ascii 锚点 id)
+    const catIndexMap = {};
+    categories.forEach((c, idx) => { catIndexMap[c] = idx; });
+    // 保留已渲染菜品的图片加载状态，避免刷新时骨架屏闪烁
+    const prev = {};
+    this.data.dishList.forEach(d => { prev[d.name] = d; });
+    const dishList = [];
+    categories.forEach(c => {
+      grouped[c].forEach((d, i) => {
+        const p = prev[d.name];
+        dishList.push(Object.assign({}, d, {
+          showTitle: i === 0,
+          catIndex: catIndexMap[c],
+          imgLoaded: p ? p.imgLoaded : false,
+          imgError: p ? p.imgError : false
+        }));
+      });
+    });
+    const catList = categories.map(c => ({
+      name: c,
+      icon: CAT_ICONS[c] || DEFAULT_ICON
+    }));
+    this.setData(
+      { menu, categories, grouped, dishList, catList, activeCat: categories[0] || "", loading: false },
+      () => {
+        // 菜单渲染完成后建立滚动联动观察器（替代原来手动测量 + 魔法数字 setTimeout）
+        this.observeAnchors();
+        // 菜单就绪后重算购物车计数，确保恢复出的购物车数量正确
+        this.renderCart();
+      }
+    );
   },
 
   // 用 IntersectionObserver 监听各分类锚点相对菜品滚动区的进入/离开，
@@ -156,6 +187,7 @@ Page({
     cart[name] = (cart[name] || 0) + 1;
     this.setData({ cart });
     this.renderCart();
+    this.persistCart();
   },
 
   addToCart(e) {
@@ -201,6 +233,7 @@ Page({
     cart[name] = (cart[name] || 0) + 1;
     this.setData({ cart });
     this.renderCart();
+    this.persistCart();
   },
 
   decreaseQty(e) {
@@ -213,6 +246,7 @@ Page({
     }
     this.setData({ cart });
     this.renderCart();
+    this.persistCart();
   },
 
   renderCart() {
@@ -267,6 +301,7 @@ Page({
     if (failed === 0) {
       wx.showToast({ title: "已生成采购清单", icon: "success" });
       this.setData({ cart: {}, cartList: [], cartCount: 0, note: "", cartExpanded: false });
+      this.persistCart();
       // 记录完成后自动跳到采购清单，方便直接买菜
       setTimeout(() => {
         wx.switchTab({ url: "/pages/shopping/shopping" });
