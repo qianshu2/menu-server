@@ -5,16 +5,6 @@
 .empty-title { font-size: 16px; color: #3a2f28; margin-bottom: 8px; font-weight: bold; }
 .empty-sub { font-size: 13px; color: #9C8E80; line-height: 1.6; }
 
-.order-card { margin: 10px 16px; padding: 14px; background: #fff; border-radius: 10px; }
-.order-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.order-name { font-size: 15px; font-weight: bold; }
-.order-time { font-size: 11px; color: #bbb; margin-top: 4px; }
-.order-bottom { display: flex; justify-content: space-between; }
-.order-detail { font-size: 13px; color: #888; }
-.order-price { font-size: 15px; font-weight: bold; color: #F08A4B; }
-.order-note { font-size: 12px; color: #999; margin-top: 4px; padding: 4px 8px; background: #fafafa; border-radius: 4px; }
-.summary { margin: 16px; padding: 14px; background: #fff; border-radius: 10px; text-align: center; font-size: 14px; color: #666; }
-
 .shop-btn { margin: 10px 16px 0; background: #F08A4B; color: #fff; font-size: 14px; border-radius: 22px; }
 .shop-btn::after { border: none; }
 
@@ -29,15 +19,40 @@
 .cal-title { font-size: 16px; font-weight: bold; color: #3a2f28; }
 .cal-week { display: flex; }
 .cal-wd { flex: 1; text-align: center; font-size: 12px; color: #9C8E80; padding-bottom: 6px; }
+.cal-wd.weekend { color: #e07a3f; font-weight: bold; }
 .cal-grid { display: flex; flex-wrap: wrap; }
-.cal-cell { width: 14.285%; height: 46px; display: flex; align-items: center; justify-content: center; position: relative; box-sizing: border-box; }
+.cal-cell { width: 14.285%; height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; box-sizing: border-box; }
 .cal-cell.is-empty { visibility: hidden; }
-.cal-day { font-size: 14px; color: #3a2f28; }
+.cal-cell.weekend { background: #fbeede; border-radius: 10px; }
+.cal-day { font-size: 14px; color: #3a2f28; line-height: 1.2; }
+.cal-lunar { font-size: 10px; color: #b3a596; line-height: 1.2; transform: scale(0.92); }
+.cal-lunar.term { color: #e0532f; font-weight: bold; }
 .cal-cell.has .cal-day { color: #F08A4B; font-weight: bold; }
 .cal-cell.has { background: #fdf3df; border-radius: 10px; }
+.cal-cell.has.weekend { background: #fbe9cf; }
 .cal-cell.is-today { background: #F08A4B; border-radius: 10px; }
 .cal-cell.is-today .cal-day { color: #fff; font-weight: bold; }
+.cal-cell.is-today .cal-lunar { color: rgba(255,255,255,.9); }
+.cal-cell.is-today .cal-lunar.term { color: #fff; }
 .cal-dot { position: absolute; top: 4px; right: 7px; font-size: 10px; line-height: 1; color: #F08A4B; background: #fff; border-radius: 8px; padding: 1px 4px; }
 .cal-cell.is-today .cal-dot { color: #F08A4B; background: rgba(255,255,255,.85); }
 .cal-stats { display: flex; justify-content: space-around; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0ece8; }
 .cal-stat { font-size: 13px; color: #8e6b1f; }
+.cal-cell.is-selected { box-shadow: inset 0 0 0 2px #F08A4B; border-radius: 10px; }
+.cal-cell:active { opacity: .7; }
+
+/* 当日记录详情 */
+.day-card { margin: 12px 16px; padding: 14px; background: #fff; border-radius: 14px; box-shadow: 0 4px 14px rgba(181,121,63,.12); }
+.day-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.day-title { font-size: 15px; font-weight: bold; color: #3a2f28; }
+.day-count { font-size: 12px; color: #F08A4B; }
+.day-empty { text-align: center; padding: 24px 0 8px; }
+.day-empty .empty-img { width: 120px; height: 150px; margin: 0 auto 10px; display: block; border-radius: 12px; background: #fafafa; }
+.day-empty .empty-title { font-size: 14px; color: #3a2f28; margin-bottom: 6px; font-weight: bold; }
+.day-empty .empty-sub { font-size: 12px; color: #9C8E80; line-height: 1.6; }
+.rec-card { padding: 12px; background: #fbf4ee; border-radius: 10px; margin-bottom: 8px; }
+.rec-top { display: flex; justify-content: space-between; align-items: center; }
+.rec-name { font-size: 15px; font-weight: bold; color: #3a2f28; }
+.rec-qty { font-size: 13px; color: #F08A4B; font-weight: bold; }
+.rec-note { font-size: 12px; color: #999; margin-top: 4px; padding: 4px 8px; background: #fff; border-radius: 4px; }
+.rec-time { font-size: 11px; color: #bbb; margin-top: 4px; }

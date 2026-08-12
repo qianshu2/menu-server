@@ -10,12 +10,14 @@
       <text class="cal-nav" bindtap="nextMonth">›</text>
     </view>
     <view class="cal-week">
-      <text class="cal-wd" wx:for="{{weekdays}}" wx:key="*this">{{item}}</text>
+      <text class="cal-wd {{index===0 || index===6 ? 'weekend' : ''}}" wx:for="{{weekdays}}" wx:key="*this">{{item}}</text>
     </view>
     <view class="cal-grid">
       <view wx:for="{{calCells}}" wx:key="key"
-            class="cal-cell {{item.empty ? 'is-empty' : ''}} {{item.isToday ? 'is-today' : ''}} {{item.count > 0 ? 'has' : ''}}">
+            class="cal-cell {{item.empty ? 'is-empty' : ''}} {{item.isToday ? 'is-today' : ''}} {{item.count > 0 ? 'has' : ''}} {{item.isWeekend ? 'weekend' : ''}} {{item.isSelected ? 'is-selected' : ''}}"
+            data-day="{{item.empty ? '' : item.day}}" bindtap="onTapDay">
         <text wx:if="{{!item.empty}}" class="cal-day">{{item.day}}</text>
+        <text wx:if="{{!item.empty}}" class="cal-lunar {{item.term ? 'term' : ''}}">{{item.lunar}}</text>
         <text wx:if="{{item.count > 0}}" class="cal-dot">{{item.count}}</text>
       </view>
     </view>
@@ -25,28 +27,31 @@
     </view>
   </view>
 
-  <view wx:if="{{orders.length === 0}}" class="empty">
-    <image class="empty-img" src="../../images/cats/xiaoxia.jpg" mode="aspectFit" />
-    <view class="empty-title">还没有记录哦~</view>
-    <view class="empty-sub">今天想吃点什么？去「菜谱」挑几道吧</view>
-  </view>
+  <!-- 当日记录详情：点击日历某天后展示 -->
+  <view class="day-card" wx:if="{{selectedDate}}">
+    <view class="day-head">
+      <text class="day-title">{{selLabel}}</text>
+      <text class="day-count">{{dayOrdersCount}} 条</text>
+    </view>
 
-  <view wx:else>
+    <view wx:if="{{dayOrdersCount === 0}}" class="day-empty">
+      <image class="empty-img" src="../../images/cats/xiaoxia.jpg" mode="aspectFit" />
+      <view class="empty-title">这一天还没有记录哦~</view>
+      <view class="empty-sub">去「菜谱」挑几道，记下来吧</view>
+    </view>
+
+    <block wx:else>
+      <view class="rec-card" wx:for="{{dayOrders}}" wx:key="index">
+        <view class="rec-top">
+          <text class="rec-name">{{item.dish_name}}</text>
+          <text class="rec-qty">x{{item.quantity}}</text>
+        </view>
+        <view wx:if="{{item.note}}" class="rec-note">备忘：{{item.note}}</view>
+        <view class="rec-time">{{item.created_at}}</view>
+      </view>
+      <button class="clear-day-btn" bindtap="clearSelected">清除当日记录</button>
+    </block>
+
     <button class="shop-btn" bindtap="goShopping">生成今日采购清单 →</button>
-    <button class="clear-day-btn" bindtap="clearToday">清除当日记录</button>
-    <view class="order-card" wx:for="{{orders}}" wx:key="index">
-      <view class="order-top">
-        <text class="order-name">{{item.dish_name}}</text>
-      </view>
-      <view class="order-bottom">
-        <text class="order-detail">x{{item.quantity}} 份</text>
-      </view>
-      <view wx:if="{{item.note}}" class="order-note">备忘：{{item.note}}</view>
-      <view class="order-time">{{item.created_at}}</view>
-    </view>
-
-    <view class="summary">
-      <text>共 {{count}} 条记录</text>
-    </view>
   </view>
 </scroll-view>
