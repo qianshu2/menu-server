@@ -312,6 +312,16 @@ Page({
 
   // ===== 家庭共享（房间码） =====
 
+  // 点按房间码复制到剪贴板，方便发给家人
+  copyShareCode() {
+    const code = this.data.shareCode;
+    if (!code) return;
+    wx.setClipboardData({
+      data: code,
+      success: () => wx.showToast({ title: "房间码已复制", icon: "none" })
+    });
+  },
+
   // 读取本地房间码并拉取共享清单（onShow 调用，与今日清单互不干扰）
   loadShare() {
     const code = wx.getStorageSync("share_code") || "";

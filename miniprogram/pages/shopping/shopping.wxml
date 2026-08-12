@@ -6,7 +6,7 @@
   <view class="share-card">
     <view class="share-head">
       <text class="share-title">👨‍👩‍👧 家庭共享</text>
-      <text wx:if="{{shareCode}}" class="share-code">房间码 {{shareCode}}</text>
+      <text wx:if="{{shareCode}}" class="share-code" bindtap="copyShareCode">房间码 {{shareCode}} · 点按复制</text>
     </view>
 
     <!-- 未加入：创建 / 输入码加入 -->

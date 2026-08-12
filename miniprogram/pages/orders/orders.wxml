@@ -2,6 +2,29 @@
 <scroll-view scroll-y class="page">
   <view class="header">饮食记录</view>
 
+  <!-- 饮食日历 -->
+  <view class="cal-card">
+    <view class="cal-bar">
+      <text class="cal-nav" bindtap="prevMonth">‹</text>
+      <text class="cal-title">{{calYear}}年{{calMonth}}月</text>
+      <text class="cal-nav" bindtap="nextMonth">›</text>
+    </view>
+    <view class="cal-week">
+      <text class="cal-wd" wx:for="{{weekdays}}" wx:key="*this">{{item}}</text>
+    </view>
+    <view class="cal-grid">
+      <view wx:for="{{calCells}}" wx:key="key"
+            class="cal-cell {{item.empty ? 'is-empty' : ''}} {{item.isToday ? 'is-today' : ''}} {{item.count > 0 ? 'has' : ''}}">
+        <text wx:if="{{!item.empty}}" class="cal-day">{{item.day}}</text>
+        <text wx:if="{{item.count > 0}}" class="cal-dot">{{item.count}}</text>
+      </view>
+    </view>
+    <view class="cal-stats">
+      <text class="cal-stat">🔥 连续 {{streak}} 天</text>
+      <text class="cal-stat">📅 本月 {{monthCount}} 次</text>
+    </view>
+  </view>
+
   <view wx:if="{{orders.length === 0}}" class="empty">
     <image class="empty-img" src="../../images/cats/xiaoxia.jpg" mode="aspectFit" />
     <view class="empty-title">还没有记录哦~</view>

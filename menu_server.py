@@ -529,6 +529,48 @@ def get_orders():
     return {"code": 200, "data": order_list, "count": len(order_list)}
 
 
+@app.route("/orders/calendar")
+def orders_calendar():
+    """按日聚合的饮食记录日历：返回某月每天记录次数、连续打卡天数、本月总数。"""
+    year = request.args.get("year", type=int)
+    month = request.args.get("month", type=int)
+    now = datetime.now(BEIJING)
+    if not year:
+        year = now.year
+    if not month:
+        month = now.month
+    # 该月每天的记录次数（按 quantity 累加）
+    prefix = f"{year:04d}-{month:02d}-"
+    rows = get_db().execute(
+        "SELECT created_at, quantity FROM orders WHERE created_at LIKE ?",
+        (prefix + "%",),
+    ).fetchall()
+    days = {}
+    for r in rows:
+        day = r["created_at"][8:10]
+        days[day] = days.get(day, 0) + (r["quantity"] or 1)
+    # 连续打卡：从今天往前数，遇到无记录的日期即断
+    distinct = set()
+    for r in get_db().execute("SELECT DISTINCT substr(created_at,1,10) AS d FROM orders").fetchall():
+        if r["d"]:
+            distinct.add(r["d"])
+    streak = 0
+    cur = now.date()
+    while cur.strftime("%Y-%m-%d") in distinct:
+        streak += 1
+        cur = cur - timedelta(days=1)
+    return {
+        "code": 200,
+        "data": {
+            "year": year,
+            "month": month,
+            "days": days,
+            "streak": streak,
+            "monthTotal": sum(days.values()),
+        },
+    }
+
+
 @app.route("/clear-orders", methods=["POST"])
 def clear_orders():
     db = get_db()
