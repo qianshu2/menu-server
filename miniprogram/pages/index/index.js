@@ -32,7 +32,10 @@ Page({
     catList: [],
     detailVisible: false,
     detailDish: null,
-    placeholder: "../../images/cats/xiaoxia.jpg"
+    placeholder: "../../images/cats/xiaoxia.jpg",
+    recommend: null,     // 今日推荐菜（按日期确定性选取，同一天不变）
+    recImgError: false,  // 推荐菜配图加载失败则回退占位图
+    recClosed: false     // 用户今日是否已关闭推荐（当天不再弹出）
   },
 
   onLoad() {
@@ -114,8 +117,72 @@ Page({
         this.observeAnchors();
         // 菜单就绪后重算购物车计数，确保恢复出的购物车数量正确
         this.renderCart();
+        // 菜单就绪后再选今日推荐（依赖完整 menu 数据）
+        this.pickRecommend();
       }
     );
+  },
+
+  // ===== 今日推荐 =====
+
+  // 本地日期 YYYY-MM-DD（与 shopping/orders 的 todayStr 同源）
+  todayKey() {
+    const d = new Date();
+    const m = (d.getMonth() + 1).toString().padStart(2, "0");
+    const day = d.getDate().toString().padStart(2, "0");
+    return `${d.getFullYear()}-${m}-${day}`;
+  },
+
+  // 字符串哈希，用于把「日期」换算成稳定的菜品下标
+  hashStr(s) {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return h;
+  },
+
+  // 今日推荐：按日期确定性选一道菜。同一天多次刷新结果不变（已缓存），跨天自动换。
+  pickRecommend() {
+    const menu = this.data.menu;
+    if (!menu || menu.length === 0) return;
+    const today = this.todayKey();
+    // 当日已关闭则不再弹出，跨天（日期变化）后自动恢复
+    if (wx.getStorageSync("rec_dismissed") === today) {
+      this.setData({ recommend: null, recClosed: true });
+      return;
+    }
+    const cached = wx.getStorageSync("recommend");
+    if (cached && cached.date === today && menu.find(d => d.name === cached.name)) {
+      this.setData({ recommend: cached.dish, recImgError: false, recClosed: false });
+      return;
+    }
+    const seed = this.hashStr(today);
+    const dish = menu[seed % menu.length];
+    wx.setStorageSync("recommend", { date: today, name: dish.name, dish });
+    this.setData({ recommend: dish, recImgError: false, recClosed: false });
+  },
+
+  // 关闭今日推荐：隐藏横幅并记录当日关闭，避免反复打扰
+  closeRecommend() {
+    this.setData({ recommend: null, recClosed: true });
+    wx.setStorageSync("rec_dismissed", this.todayKey());
+  },
+
+  // 换一道：随机选一道不同于当前的（菜单≥2 道时才有效）
+  reshuffle() {
+    if (this.data.recClosed) return;
+    const menu = this.data.menu;
+    if (!menu || menu.length < 2) return;
+    let next = this.data.recommend;
+    let guard = 0;
+    while (next && next.name === this.data.recommend.name && guard < 20) {
+      next = menu[Math.floor(Math.random() * menu.length)];
+      guard++;
+    }
+    this.setData({ recommend: next, recImgError: false });
+  },
+
+  onRecImgError() {
+    this.setData({ recImgError: true });
   },
 
   // 用 IntersectionObserver 监听各分类锚点相对菜品滚动区的进入/离开，

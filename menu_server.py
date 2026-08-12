@@ -6,7 +6,11 @@
 图片存在 static/images/，URL 通过 /img/<name> 访问
 """
 import os
+import json
+import time
 import sqlite3
+import urllib.request
+import urllib.parse
 from datetime import datetime, timezone, timedelta
 
 # 后端部署在 Render（容器默认 UTC 时区），时间戳必须用北京时间生成
@@ -78,6 +82,30 @@ def init_db():
             quantity   INTEGER NOT NULL,
             created_at TEXT    NOT NULL,
             note       TEXT    DEFAULT ''
+        )
+    ''')
+    # 订阅消息授权用户表：记录 openid，供后续推送（一次性订阅模型下仅作记录与去重）
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS subscribers (
+            openid     TEXT PRIMARY KEY,
+            updated_at TEXT NOT NULL
+        )
+    ''')
+    # 家庭共享房间（路线 A：房间码模型，无登录）
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS share_rooms (
+            code       TEXT PRIMARY KEY,
+            created_at TEXT NOT NULL
+        )
+    ''')
+    db.execute('''
+        CREATE TABLE IF NOT EXISTS share_items (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            code       TEXT NOT NULL,
+            dish_name  TEXT NOT NULL,
+            quantity   INTEGER NOT NULL DEFAULT 1,
+            added_by   TEXT DEFAULT '我',
+            created_at TEXT NOT NULL
         )
     ''')
 
@@ -248,13 +276,6 @@ def init_db():
     db.close()
 
 init_db()
-
-
-# ===== 前端页面 =====
-@app.route("/app")
-def order_app():
-    """返回饮食记录前端页面"""
-    return send_from_directory(BASE_DIR, "order_app.html")
 
 
 # ===== 图片服务 =====
@@ -530,6 +551,221 @@ def clear_orders():
     return {"code": 200, "msg": "记录已清空"}
 
 
+# ===== 微信订阅消息（提醒） =====
+# 需在小程序后台配置以下环境变量，否则相关接口返回「微信未配置」：
+#   WX_APPID    - 小程序 AppID
+#   WX_SECRET   - 小程序 AppSecret
+#   WX_TMPL_ID  - 订阅消息模板 ID（MP 后台「订阅消息」申请，字段需与 /notify 中 tmpl_data 对应）
+WX_APPID = os.environ.get("WX_APPID")
+WX_SECRET = os.environ.get("WX_SECRET")
+WX_TMPL_ID = os.environ.get("WX_TMPL_ID")
+
+# access_token 缓存（内存 + 过期时间）。微信 token 有效期 7200 秒，
+# 缓存避免每次发送都请求，降低频率限制风险。
+_WX_TOKEN = {"value": None, "expire": 0}
+
+
+def _wx_http_get(url):
+    try:
+        with urllib.request.urlopen(url, timeout=8) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return None
+
+
+def _wx_http_post(url, payload):
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        url, data=data, headers={"Content-Type": "application/json"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return None
+
+
+def get_wx_token():
+    """获取微信 access_token（带缓存）。未配置 AppID/Secret 时返回 None。"""
+    if not WX_APPID or not WX_SECRET:
+        return None
+    now = time.time()
+    if _WX_TOKEN["value"] and _WX_TOKEN["expire"] > now + 60:
+        return _WX_TOKEN["value"]
+    url = (
+        "https://api.weixin.qq.com/cgi-bin/token"
+        "?grant_type=client_credential"
+        f"&appid={WX_APPID}&secret={WX_SECRET}"
+    )
+    info = _wx_http_get(url)
+    if not info or "access_token" not in info:
+        return None
+    _WX_TOKEN["value"] = info["access_token"]
+    _WX_TOKEN["expire"] = now + info.get("expires_in", 7200)
+    return _WX_TOKEN["value"]
+
+
+@app.route("/wx/login", methods=["POST"])
+def wx_login():
+    """用 wx.login 拿到的 code 换取 openid；未配置微信则明确报错。"""
+    if not WX_APPID or not WX_SECRET:
+        return {"code": 503, "msg": "微信未配置（请设置环境变量 WX_APPID/WX_SECRET）"}, 503
+    data = request.get_json(silent=True) or {}
+    code = (data.get("code") or "").strip()
+    if not code:
+        return {"code": 400, "msg": "缺少 code"}, 400
+    url = (
+        "https://api.weixin.qq.com/sns/jscode2session"
+        f"?appid={WX_APPID}&secret={WX_SECRET}"
+        f"&js_code={urllib.parse.quote(code)}&grant_type=authorization_code"
+    )
+    info = _wx_http_get(url)
+    if not info or "openid" not in info:
+        return {"code": 502, "msg": "换取 openid 失败"}, 502
+    openid = info["openid"]
+    # 记录授权用户（兼容旧 SQLite：先查后插/更新，避免依赖 UPSERT 语法）
+    now = datetime.now(BEIJING).strftime("%Y-%m-%d %H:%M:%S")
+    if db_get_subscriber(openid):
+        get_db().execute("UPDATE subscribers SET updated_at=? WHERE openid=?", (now, openid))
+    else:
+        get_db().execute("INSERT INTO subscribers (openid, updated_at) VALUES (?, ?)", (openid, now))
+    get_db().commit()
+    return {"code": 200, "data": {"openid": openid}}
+
+
+def db_get_subscriber(openid):
+    return get_db().execute("SELECT 1 FROM subscribers WHERE openid=?", (openid,)).fetchone()
+
+
+@app.route("/notify", methods=["POST"])
+def notify():
+    """发送一条订阅消息提醒（一次性订阅：发送后即消耗该次授权）。"""
+    if not WX_TMPL_ID:
+        return {"code": 503, "msg": "微信未配置（请设置环境变量 WX_TMPL_ID）"}, 503
+    data = request.get_json(silent=True) or {}
+    openid = (data.get("openid") or "").strip()
+    if not openid:
+        return {"code": 400, "msg": "缺少 openid"}, 400
+    token = get_wx_token()
+    if not token:
+        return {"code": 502, "msg": "获取 access_token 失败"}, 502
+    dish = (data.get("dish") or "今天的小夏推荐").strip()
+    # 模板字段需与你在 MP 后台申请的模板一致；以下 thing1/time2/thing3 为示例，
+    # 实际请按模板的字段名修改（可在 MP 后台「我的模板」查看字段关键字）。
+    tmpl_data = {
+        "thing1": {"value": "该做晚饭啦"},
+        "time2": {"value": datetime.now(BEIJING).strftime("%H:%M")},
+        "thing3": {"value": f"小夏推荐：{dish}"},
+    }
+    url = f"https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token={token}"
+    payload = {
+        "touser": openid,
+        "template_id": WX_TMPL_ID,
+        "data": tmpl_data,
+    }
+    result = _wx_http_post(url, payload)
+    if not result or result.get("errcode", 0) != 0:
+        return {"code": 502, "msg": "发送失败", "detail": result}, 502
+    return {"code": 200, "msg": "已发送提醒"}
+
+
+# ===== 家庭共享（路线 A：房间码，无登录） =====
+import random
+import string
+
+def gen_room_code():
+    """生成 6 位大写字母+数字房间码，保证与已有房间不冲突。"""
+    alphabet = string.ascii_uppercase + string.digits
+    # 去掉易混字符（0/O/1/I）降低输错概率
+    alphabet = alphabet.translate(str.maketrans("", "", "0O1I"))
+    for _ in range(10):
+        code = "".join(random.choice(alphabet) for _ in range(6))
+        exist = get_db().execute(
+            "SELECT 1 FROM share_rooms WHERE code=?", (code,)
+        ).fetchone()
+        if not exist:
+            return code
+    return None  # 极端冲突兜底
+
+
+@app.route("/share/room", methods=["POST"])
+def create_share_room():
+    code = gen_room_code()
+    if not code:
+        return {"code": 500, "msg": "生成房间码失败"}, 500
+    now = datetime.now(BEIJING).strftime("%Y-%m-%d %H:%M:%S")
+    get_db().execute(
+        "INSERT INTO share_rooms (code, created_at) VALUES (?, ?)", (code, now)
+    )
+    get_db().commit()
+    return {"code": 200, "data": {"code": code}}
+
+
+@app.route("/share/room/<code>", methods=["GET"])
+def get_share_room(code):
+    """校验房间是否存在（加入时用）。"""
+    exist = get_db().execute(
+        "SELECT 1 FROM share_rooms WHERE code=?", (code,)
+    ).fetchone()
+    if not exist:
+        return {"code": 404, "msg": "房间不存在"}, 404
+    return {"code": 200, "data": {"code": code}}
+
+
+@app.route("/share/room/<code>/items", methods=["GET"])
+def get_share_items(code):
+    if not get_db().execute("SELECT 1 FROM share_rooms WHERE code=?", (code,)).fetchone():
+        return {"code": 404, "msg": "房间不存在"}, 404
+    rows = get_db().execute(
+        "SELECT dish_name, quantity, added_by FROM share_items "
+        "WHERE code=? ORDER BY id ASC", (code,)
+    ).fetchall()
+    items = [
+        {"dish_name": r["dish_name"], "quantity": r["quantity"], "added_by": r["added_by"]}
+        for r in rows
+    ]
+    return {"code": 200, "data": items}
+
+
+@app.route("/share/room/<code>/items", methods=["POST"])
+def add_share_item(code):
+    if not get_db().execute("SELECT 1 FROM share_rooms WHERE code=?", (code,)).fetchone():
+        return {"code": 404, "msg": "房间不存在"}, 404
+    data = request.get_json(silent=True) or {}
+    name = (data.get("dish_name") or "").strip()
+    qty = data.get("quantity", 1)
+    added_by = (data.get("added_by") or "我").strip()[:20] or "我"
+    if not name:
+        return {"code": 400, "msg": "菜名不能为空"}, 400
+    if len(name) > 50:
+        return {"code": 400, "msg": "菜名过长（上限 50 字符）"}, 400
+    if isinstance(qty, bool) or not isinstance(qty, int) or qty < 1 or qty > 999:
+        return {"code": 400, "msg": "数量需为 1-999 的整数"}, 400
+    now = datetime.now(BEIJING).strftime("%Y-%m-%d %H:%M:%S")
+    get_db().execute(
+        "INSERT INTO share_items (code, dish_name, quantity, added_by, created_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (code, name, qty, added_by, now),
+    )
+    get_db().commit()
+    return {"code": 200, "msg": f"已添加：{name}"}
+
+
+@app.route("/share/room/<code>/items", methods=["DELETE"])
+def remove_share_item(code):
+    if not get_db().execute("SELECT 1 FROM share_rooms WHERE code=?", (code,)).fetchone():
+        return {"code": 404, "msg": "房间不存在"}, 404
+    data = request.get_json(silent=True) or {}
+    name = (data.get("dish_name") or "").strip()
+    if not name:
+        return {"code": 400, "msg": "菜名不能为空"}, 400
+    cur = get_db().execute(
+        "DELETE FROM share_items WHERE code=? AND dish_name=?", (code, name)
+    )
+    get_db().commit()
+    return {"code": 200, "msg": f"已移除：{name}", "deleted": cur.rowcount}
+
+
 @app.route("/")
 def home():
     return {
@@ -544,6 +780,9 @@ def home():
             {"地址": "/order (POST)",         "说明": "记录饮食"},
             {"地址": "/orders",               "说明": "饮食记录列表"},
             {"地址": "/clear-orders (POST)",   "说明": "清空记录（全清需后台权限）"},
+            {"地址": "/share/room (POST)",     "说明": "创建家庭共享房间，返回房间码"},
+            {"地址": "/share/room/<码> (GET)",  "说明": "校验/获取房间"},
+            {"地址": "/share/room/<码>/items",  "说明": "共享清单：GET 列表 / POST 增 / DELETE 删"},
         ],
     }
 

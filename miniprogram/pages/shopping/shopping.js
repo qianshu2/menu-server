@@ -57,11 +57,17 @@ Page({
     showAdd: false,
     addInput: "",
     seasoningLib: [],   // 我的调料库（所有曾补充过的，去重展示）
-    showStapleHint: false // 是否存在常备项，用于提示与按钮
+    showStapleHint: false, // 是否存在常备项，用于提示与按钮
+    // 家庭共享（路线 A：房间码，无登录）
+    shareCode: "",       // 当前所在房间码（空=未加入）
+    shareJoinInput: "",  // 加入时输入的码
+    shareItems: [],      // [{ dish_name, quantity, added_by }]
+    shareName: "我"      // 在共享房间里的昵称
   },
 
   onShow() {
     this.loadShopping();
+    this.loadShare();
   },
 
   async loadShopping() {
@@ -302,6 +308,151 @@ Page({
     } catch (e) {
       wx.showToast({ title: "清除失败", icon: "error" });
     }
+  },
+
+  // ===== 家庭共享（房间码） =====
+
+  // 读取本地房间码并拉取共享清单（onShow 调用，与今日清单互不干扰）
+  loadShare() {
+    const code = wx.getStorageSync("share_code") || "";
+    const name = wx.getStorageSync("share_name") || "我";
+    this.setData({ shareCode: code, shareName: name });
+    if (code) this.loadShareItems();
+  },
+
+  async loadShareItems() {
+    const code = this.data.shareCode;
+    if (!code) return;
+    try {
+      const res = await request("/share/room/" + code + "/items");
+      this.setData({ shareItems: (res.data && res.data.data) || [] });
+    } catch (e) { /* 房间失效等异常静默忽略 */ }
+  },
+
+  // POST 带重试：Render 免费版实例会冷启动，首次请求常超时（网络层失败）。
+  // 仅在「网络层失败」（err 无 statusCode）时重试并等待唤醒；HTTP 错误（如未部署 404）直接抛出。
+  async retryPost(url, opts, tries = 2) {
+    let lastErr;
+    for (let i = 0; i < tries; i++) {
+      try {
+        return await request(url, Object.assign({ method: "POST" }, opts));
+      } catch (e) {
+        lastErr = e;
+        if (e && e.statusCode) throw e; // HTTP 错误不重试，避免无意义等待
+        if (i < tries - 1) await new Promise(r => setTimeout(r, 1200));
+      }
+    }
+    throw lastErr;
+  },
+
+  // 创建房间：后端返回 6 位码，存本地即视为加入
+  async createRoom() {
+    wx.showLoading({ title: "创建中...", mask: true });
+    try {
+      const res = await this.retryPost("/share/room");
+      if (res.data && res.data.code === 200) {
+        const code = res.data.data.code;
+        wx.setStorageSync("share_code", code);
+        this.setData({ shareCode: code, shareJoinInput: "", shareItems: [] });
+        wx.hideLoading();
+        wx.showToast({ title: "房间码 " + code, icon: "none" });
+      } else {
+        wx.hideLoading();
+        wx.showToast({ title: (res.data && res.data.msg) || "创建失败", icon: "none" });
+      }
+    } catch (e) {
+      wx.hideLoading();
+      wx.showToast({ title: "创建失败，稍后重试", icon: "error" });
+    }
+  },
+
+  onShareJoinInput(e) {
+    this.setData({ shareJoinInput: e.detail.value });
+  },
+
+  // 加入房间：校验码存在后存本地
+  async joinRoom() {
+    const code = (this.data.shareJoinInput || "").trim().toUpperCase();
+    if (!code) { wx.showToast({ title: "请输入房间码", icon: "none" }); return; }
+    wx.showLoading({ title: "加入中...", mask: true });
+    try {
+      const res = await this.retryPost("/share/room/" + encodeURIComponent(code));
+      if (res.data && res.data.code === 200) {
+        wx.setStorageSync("share_code", code);
+        this.setData({ shareCode: code, shareJoinInput: "" });
+        wx.hideLoading();
+        wx.showToast({ title: "已加入 " + code, icon: "none" });
+        this.loadShareItems();
+      } else {
+        wx.hideLoading();
+        wx.showToast({ title: "房间不存在", icon: "none" });
+      }
+    } catch (e) {
+      wx.hideLoading();
+      wx.showToast({ title: "房间不存在", icon: "none" });
+    }
+  },
+
+  // 向房间添加一道菜（数量默认 1）；失败仅提示，不阻断
+  async addShareItem(name, qty) {
+    const code = this.data.shareCode;
+    if (!code || !name) return;
+    try {
+      await request("/share/room/" + code + "/items", {
+        method: "POST",
+        data: { dish_name: name, quantity: qty || 1, added_by: this.data.shareName }
+      });
+      this.loadShareItems();
+    } catch (e) {
+      wx.showToast({ title: "添加失败", icon: "error" });
+    }
+  },
+
+  // 把当前页面的今日菜品（非调料分组）整批加入共享房间
+  pushMyList() {
+    const dishes = this.data.groups
+      .filter(g => !g.isSeasoning)
+      .map(g => g.dish);
+    if (dishes.length === 0) {
+      wx.showToast({ title: "今日还没有菜", icon: "none" });
+      return;
+    }
+    wx.showLoading({ title: "加入中...", mask: true });
+    Promise.allSettled(dishes.map(name => this.addShareItem(name, 1)))
+      .then(() => {
+        wx.hideLoading();
+        wx.showToast({ title: "已加入共享", icon: "success" });
+      });
+  },
+
+  // 从房间移除一道菜
+  async removeShareItem(e) {
+    const name = e.currentTarget.dataset.name;
+    const code = this.data.shareCode;
+    if (!code) return;
+    try {
+      await request("/share/room/" + code + "/items", {
+        method: "DELETE",
+        data: { dish_name: name }
+      });
+      this.loadShareItems();
+    } catch (err) {
+      wx.showToast({ title: "删除失败", icon: "error" });
+    }
+  },
+
+  // 退出当前房间（仅本地清码，房间与清单保留给其他人）
+  leaveRoom() {
+    wx.showModal({
+      title: "退出共享房间",
+      content: "只是退出当前房间，房间与里面的清单仍保留给其他人。确定吗？",
+      confirmColor: "#ff6b35",
+      success: (res) => {
+        if (!res.confirm) return;
+        wx.removeStorageSync("share_code");
+        this.setData({ shareCode: "", shareItems: [], shareJoinInput: "" });
+      }
+    });
   },
 
   goRecord() {

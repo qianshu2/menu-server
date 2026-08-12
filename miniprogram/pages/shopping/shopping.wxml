@@ -2,6 +2,45 @@
 <scroll-view scroll-y class="page">
   <view class="header">采购清单</view>
 
+  <!-- 家庭共享（房间码，无登录） -->
+  <view class="share-card">
+    <view class="share-head">
+      <text class="share-title">👨‍👩‍👧 家庭共享</text>
+      <text wx:if="{{shareCode}}" class="share-code">房间码 {{shareCode}}</text>
+    </view>
+
+    <!-- 未加入：创建 / 输入码加入 -->
+    <view wx:if="{{!shareCode}}" class="share-join">
+      <button class="share-btn primary" bindtap="createRoom">创建共享房间</button>
+      <view class="share-row">
+        <input class="share-input" placeholder="输入房间码加入" value="{{shareJoinInput}}"
+               bindinput="onShareJoinInput" />
+        <button class="share-btn" bindtap="joinRoom">加入</button>
+      </view>
+    </view>
+
+    <!-- 已加入：共享清单 -->
+    <view wx:else>
+      <view wx:if="{{shareItems.length === 0}}" class="share-empty">房间里还没有菜，把今天的清单加进来吧</view>
+      <view wx:else class="share-list">
+        <view class="share-item" wx:for="{{shareItems}}" wx:key="dish_name">
+          <view class="share-item-main">
+            <text class="share-name">{{item.dish_name}}</text>
+            <text class="share-by">@{{item.added_by}}</text>
+          </view>
+          <view class="share-item-ctrl">
+            <text class="share-qty">×{{item.quantity}}</text>
+            <text class="share-del" catchtap="removeShareItem" data-name="{{item.dish_name}}">✕</text>
+          </view>
+        </view>
+      </view>
+      <view class="share-actions">
+        <button class="share-btn primary" bindtap="pushMyList">把我的清单加入共享</button>
+        <button class="share-btn ghost" bindtap="leaveRoom">退出房间</button>
+      </view>
+    </view>
+  </view>
+
   <view wx:if="{{loading}}" class="loading">加载中...</view>
 
   <view wx:elif="{{empty}}" class="empty">

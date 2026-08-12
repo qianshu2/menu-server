@@ -42,4 +42,29 @@
 .lib-label { font-size: 12px; color: #aaa; width: 100%; }
 .chip { font-size: 13px; color: #8e6b1f; background: #fdf3df; border: 1px solid #e0c89a; border-radius: 16px; padding: 5px 12px; }
 .chip:active { background: #f3e2c0; }
+
+/* 家庭共享面板 */
+.share-card { margin: 12px 16px; padding: 14px; background: #fff; border-radius: 14px; box-shadow: 0 4px 14px rgba(181,121,63,.12); }
+.share-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.share-title { font-size: 16px; font-weight: bold; color: #3a2f28; }
+.share-code { font-size: 12px; color: #F08A4B; background: #fdf3df; border: 1px solid #e0c89a; border-radius: 10px; padding: 2px 10px; letter-spacing: 1px; }
+.share-join { display: flex; flex-direction: column; gap: 10px; }
+.share-row { display: flex; gap: 8px; }
+.share-input { flex: 1; border: 1px solid #eee; border-radius: 8px; padding: 8px 10px; font-size: 14px; background: #fafafa; }
+.share-btn { background: #F08A4B; color: #fff; font-size: 14px; border-radius: 18px; padding: 0 18px; height: 38px; line-height: 38px; min-height: 0; margin: 0; }
+.share-btn::after { border: none; }
+.share-btn.primary { width: 100%; }
+.share-btn.ghost { background: #f3ece6; color: #9C8E80; }
+.share-empty { font-size: 13px; color: #9C8E80; text-align: center; padding: 8px 0; }
+.share-list { margin-bottom: 10px; }
+.share-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #f0ece8; }
+.share-item-main { display: flex; align-items: baseline; gap: 6px; flex: 1; min-width: 0; }
+.share-name { font-size: 15px; color: #3a2f28; }
+.share-by { font-size: 11px; color: #9C8E80; }
+.share-item-ctrl { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.share-qty { font-size: 13px; color: #F08A4B; font-weight: bold; }
+.share-del { font-size: 14px; color: #c9b8a8; padding: 0 2px; }
+.share-del:active { color: #e74c3c; }
+.share-actions { display: flex; gap: 8px; margin-top: 4px; }
+.share-actions .share-btn { flex: 1; }
 .staple-hint { font-size: 12px; color: #b08a3a; background: #fdf3df; margin: 8px 16px 0; padding: 8px 12px; border-radius: 8px; line-height: 1.6; }

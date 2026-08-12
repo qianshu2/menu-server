@@ -39,6 +39,42 @@
 .recipe-btn { background: #fff; color: #F08A4B; border: 1px solid #F08A4B; }
 .loading { text-align: center; padding: 30px; color: #aaa; }
 
+/* 今日推荐 banner —— 渐变橙卡，营造「每天都有新推荐」的打开动机 */
+.recommend {
+  flex-shrink: 0;
+  margin: 10px 14px 0;
+  background: linear-gradient(135deg, #F08A4B, #F4A96B);
+  border-radius: 16px;
+  padding: 14px 14px 12px;
+  box-shadow: 0 6px 16px rgba(181, 121, 63, 0.22);
+  position: relative;
+}
+.rec-tag {
+  position: absolute; top: -9px; left: 14px;
+  background: #fff; color: #F08A4B; font-size: 11px; font-weight: bold;
+  padding: 2px 10px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,.12);
+}
+.rec-close {
+  position: absolute; top: -9px; right: 8px;
+  width: 22px; height: 22px; line-height: 20px; text-align: center;
+  background: #fff; color: #F08A4B; border-radius: 50%;
+  font-size: 16px; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,.12);
+  z-index: 1;
+}
+.rec-close:active { background: #f3ece6; }
+.rec-body { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.rec-img { width: 56px; height: 56px; border-radius: 12px; background: rgba(255,255,255,.3); flex-shrink: 0; }
+.rec-info { flex: 1; min-width: 0; color: #fff; }
+.rec-name { font-size: 17px; font-weight: bold; }
+.rec-cat { font-size: 12px; opacity: .92; margin-top: 3px; }
+.rec-actions { display: flex; gap: 8px; margin-top: 10px; }
+.rec-btn {
+  flex: 1; background: #fff; color: #F08A4B; font-size: 13px; font-weight: bold;
+  height: 32px; line-height: 32px; border-radius: 16px; padding: 0; margin: 0;
+}
+.rec-btn::after { border: none; }
+.rec-ghost { background: rgba(255,255,255,.22); color: #fff; }
+
 /* 今日记录 —— 浮在底部上层的可折叠栏，常驻可见，不占位 */
 .cart {
   position: fixed;

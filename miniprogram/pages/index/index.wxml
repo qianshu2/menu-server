@@ -2,6 +2,23 @@
 <view class="page">
   <view class="header">今天吃什么</view>
 
+  <!-- 今日推荐：按日期确定性选一道，给每天一个打开理由 -->
+  <view wx:if="{{recommend}}" class="recommend">
+    <view class="rec-close" catchtap="closeRecommend">×</view>
+    <view class="rec-tag">小夏今天推荐</view>
+    <view class="rec-body" bindtap="goToRecipe" data-name="{{recommend.name}}">
+      <image class="rec-img" src="{{recImgError ? placeholder : apiBase + recommend.image}}" mode="aspectFill" binderror="onRecImgError" />
+      <view class="rec-info">
+        <view class="rec-name">{{recommend.name}}</view>
+        <view class="rec-cat">{{recommend.category}} · 点我看做法</view>
+      </view>
+    </view>
+    <view class="rec-actions">
+      <button class="rec-btn" catchtap="addToCart" data-name="{{recommend.name}}">想吃</button>
+      <button class="rec-btn rec-ghost" catchtap="reshuffle">换一道</button>
+    </view>
+  </view>
+
   <view wx:if="{{loading}}" class="loading">加载中...</view>
 
   <view wx:else class="main">
