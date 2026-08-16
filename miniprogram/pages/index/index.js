@@ -63,7 +63,8 @@ Page({
     // 本季时令
     seasonName: '',
     seasonVeggies: '',
-    seasonDishes: []
+    seasonDishes: [],
+    seasonClosed: false   // 用户今日是否已关闭时令卡片（当天不再显示）
   },
 
   onLoad() {
@@ -180,6 +181,10 @@ Page({
       this.setData({ recommend: null, recClosed: true });
       return;
     }
+    // 时令卡片同样是当日关闭、跨天恢复
+    if (wx.getStorageSync("season_dismissed") === today) {
+      this.setData({ seasonClosed: true });
+    }
     const cached = wx.getStorageSync("recommend");
     if (cached && cached.date === today && menu.find(d => d.name === cached.name)) {
       this.setData({ recommend: cached.dish, recImgError: false, recClosed: false });
@@ -195,6 +200,12 @@ Page({
   closeRecommend() {
     this.setData({ recommend: null, recClosed: true });
     wx.setStorageSync("rec_dismissed", this.todayKey());
+  },
+
+  // 关闭本季时令卡片：隐藏并记录当日关闭，跨天自动恢复
+  closeSeason() {
+    this.setData({ seasonClosed: true });
+    wx.setStorageSync("season_dismissed", this.todayKey());
   },
 
   // 换一道：随机选一道不同于当前的（菜单≥2 道时才有效）

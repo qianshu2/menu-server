@@ -20,10 +20,11 @@
   </view>
 
   <!-- 本季时令：从你库里挑当前应季的菜，点开看做法或「想吃」 -->
-  <view wx:if="{{seasonDishes.length}}" class="season-card">
+  <view wx:if="{{seasonDishes.length && !seasonClosed}}" class="season-card">
     <view class="season-head">
       <text class="season-title">🍂 {{seasonName}}季时令</text>
       <text class="season-veg">{{seasonVeggies}}</text>
+      <text class="season-close" catchtap="closeSeason">×</text>
     </view>
     <scroll-view scroll-x class="season-scroll" enable-flex>
       <view wx:for="{{seasonDishes}}" wx:key="name" class="season-dish" bindtap="openDetail" data-name="{{item.name}}">
