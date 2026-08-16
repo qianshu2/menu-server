@@ -5,7 +5,7 @@
   <!-- 今日推荐：按日期确定性选一道，给每天一个打开理由 -->
   <view wx:if="{{recommend}}" class="recommend">
     <view class="rec-close" catchtap="closeRecommend">×</view>
-    <view class="rec-tag">小夏今天推荐</view>
+    <view class="rec-tag">小夏今天推荐<text wx:if="{{recommendIsSeasonal}}" class="rec-season"> ·时令</text></view>
     <view class="rec-body" bindtap="goToRecipe" data-name="{{recommend.name}}">
       <image class="rec-img" src="{{recImgError ? placeholder : apiBase + recommend.image}}" mode="aspectFill" binderror="onRecImgError" />
       <view class="rec-info">
@@ -17,6 +17,21 @@
       <button class="rec-btn" catchtap="addToCart" data-name="{{recommend.name}}">想吃</button>
       <button class="rec-btn rec-ghost" catchtap="reshuffle">换一道</button>
     </view>
+  </view>
+
+  <!-- 本季时令：从你库里挑当前应季的菜，点开看做法或「想吃」 -->
+  <view wx:if="{{seasonDishes.length}}" class="season-card">
+    <view class="season-head">
+      <text class="season-title">🍂 {{seasonName}}季时令</text>
+      <text class="season-veg">{{seasonVeggies}}</text>
+    </view>
+    <scroll-view scroll-x class="season-scroll" enable-flex>
+      <view wx:for="{{seasonDishes}}" wx:key="name" class="season-dish" bindtap="openDetail" data-name="{{item.name}}">
+        <image class="season-img" src="{{apiBase}}{{item.image}}" mode="aspectFill" />
+        <text class="season-name">{{item.name}}</text>
+        <button class="season-add" catchtap="addToCart" data-name="{{item.name}}">想吃</button>
+      </view>
+    </scroll-view>
   </view>
 
   <view wx:if="{{loading}}" class="loading">加载中...</view>

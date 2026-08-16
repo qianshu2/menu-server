@@ -14,6 +14,29 @@ const CAT_ICONS = {
 };
 const DEFAULT_ICON = '../../images/cats/default.png';
 
+// ===== 时令模块（前端内置，与农历同模式，零部署）=====
+// 说明：HTML 原版的「时令蔬菜」很多不在用户 44 道菜库里，
+// 这里改为「按季节从真实菜库挑应季菜」，保证点「想吃」都能落到库内菜品。
+const SEASON_INFO = {
+  spring: { name: '春', veggies: '春笋·菠菜·荠菜·豌豆·韭菜·芹菜' },
+  summer: { name: '夏', veggies: '黄瓜·番茄·茄子·冬瓜·空心菜·苦瓜·毛豆·丝瓜' },
+  autumn: { name: '秋', veggies: '莲藕·南瓜·山药·芋头·茭白·板栗·秋葵·红薯' },
+  winter: { name: '冬', veggies: '白菜·萝卜·胡萝卜·土豆·冬笋·洋葱' }
+};
+// 每季从 44 道菜中挑选应季/当季更合适的菜（均为库内真实菜品名）
+const SEASON_DISHES = {
+  spring: ['拍黄瓜', '凉拌木耳', '凉拌三丝', '爽口木耳', '清蒸鲈鱼', '白灼大虾', '爆炒花蛤', '小炒牛肉', '鱼香肉丝', '番茄鸡蛋盖饭', '番茄蛋花汤', '番茄牛腩', '杨枝甘露', '冰镇柠檬水', '凉拌牛肉', '手撕鸡', '笋子牛肉', '口水鸡'],
+  summer: ['拍黄瓜', '凉拌木耳', '凉拌三丝', '爽口木耳', '盐水毛豆', '番茄鸡蛋盖饭', '番茄蛋花汤', '番茄牛腩', '酸辣粉', '冰镇柠檬水', '杨枝甘露', '白灼大虾', '清蒸鲈鱼', '爆炒花蛤', '凉拌牛肉', '手撕鸡', '口水鸡', '可乐', '薯条', '炸鸡翅(4个)'],
+  autumn: ['红烧肉', '粉蒸肉', '粉蒸排骨', '黄焖鸡', '红烧牛肉', '干锅虾', '辣子鸡丁', '宫保鸡丁', '回锅肉', '酸菜鱼', '毛血旺', '水煮肉片', '海带炖猪脚', '蒜泥白肉', '笋子牛肉', '小炒牛肉', '鱼香肉丝', '银耳莲子羹', '麻婆豆腐', '口水鸡'],
+  winter: ['酸萝卜老鸭汤', '海带炖猪脚', '红烧肉', '粉蒸肉', '粉蒸排骨', '黄焖鸡', '红烧牛肉', '水煮肉片', '毛血旺', '辣子鸡丁', '回锅肉', '蒜泥白肉', '麻婆豆腐', '宫保鸡丁', '笋子牛肉', '小炒牛肉', '银耳莲子羹', '番茄牛腩', '酸菜鱼']
+};
+function getSeasonKey(m) {
+  if (m >= 3 && m <= 5) return 'spring';
+  if (m >= 6 && m <= 8) return 'summer';
+  if (m >= 9 && m <= 11) return 'autumn';
+  return 'winter';
+}
+
 Page({
   data: {
     apiBase: getBase(),
@@ -35,7 +58,12 @@ Page({
     placeholder: "../../images/cats/xiaoxia.jpg",
     recommend: null,     // 今日推荐菜（按日期确定性选取，同一天不变）
     recImgError: false,  // 推荐菜配图加载失败则回退占位图
-    recClosed: false     // 用户今日是否已关闭推荐（当天不再弹出）
+    recClosed: false,    // 用户今日是否已关闭推荐（当天不再弹出）
+    recommendIsSeasonal: false, // 今日推荐是否落在当季应季菜里
+    // 本季时令
+    seasonName: '',
+    seasonVeggies: '',
+    seasonDishes: []
   },
 
   onLoad() {
@@ -119,6 +147,8 @@ Page({
         this.renderCart();
         // 菜单就绪后再选今日推荐（依赖完整 menu 数据）
         this.pickRecommend();
+        // 菜单就绪后计算当季时令菜
+        this.applySeason();
       }
     );
   },
@@ -179,6 +209,31 @@ Page({
       guard++;
     }
     this.setData({ recommend: next, recImgError: false });
+    this.updateRecSeasonal();
+  },
+
+  // 判断当前推荐菜是否落在当季应季菜中（用于显示「时令」标记）
+  updateRecSeasonal() {
+    const rec = this.data.recommend;
+    const names = SEASON_DISHES[getSeasonKey(new Date().getMonth() + 1)] || [];
+    this.setData({ recommendIsSeasonal: !!(rec && names.includes(rec.name)) });
+  },
+
+  // 计算本季时令：从真实菜库挑当前季节合适的菜，供首页「本季时令」横向展示
+  applySeason() {
+    const m = new Date().getMonth() + 1;
+    const key = getSeasonKey(m);
+    const info = SEASON_INFO[key];
+    const names = SEASON_DISHES[key] || [];
+    const dishes = names
+      .map(n => this.data.menu.find(d => d.name === n))
+      .filter(Boolean);
+    this.setData({
+      seasonName: info.name,
+      seasonVeggies: info.veggies,
+      seasonDishes: dishes
+    });
+    this.updateRecSeasonal();
   },
 
   onRecImgError() {

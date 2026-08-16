@@ -74,6 +74,32 @@
 }
 .rec-btn::after { border: none; }
 .rec-ghost { background: rgba(255,255,255,.22); color: #fff; }
+.rec-season { color: #fff; background: rgba(255,255,255,.28); border-radius: 8px; padding: 1px 6px; margin-left: 2px; font-size: 10px; }
+
+/* 本季时令 —— 横向滑动的应季菜卡片 */
+.season-card {
+  flex-shrink: 0;
+  margin: 12px 14px 0;
+  background: #fff7ef;
+  border: 1px solid #f3e2d2;
+  border-radius: 16px;
+  padding: 12px 12px 10px;
+}
+.season-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.season-title { font-size: 15px; font-weight: bold; color: #c9702f; }
+.season-veg { font-size: 11px; color: #b08a6a; flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.season-scroll { display: flex; white-space: nowrap; }
+.season-dish {
+  display: inline-flex; flex-direction: column; align-items: center;
+  width: 84px; margin-right: 10px; flex-shrink: 0;
+}
+.season-img { width: 72px; height: 72px; border-radius: 12px; background: #efe6dc; }
+.season-name { font-size: 12px; color: #4a3a30; margin-top: 5px; max-width: 80px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.season-add {
+  margin: 4px 0 0; background: #F08A4B; color: #fff; font-size: 11px;
+  height: 24px; line-height: 24px; border-radius: 12px; padding: 0 10px;
+}
+.season-add::after { border: none; }
 
 /* 今日记录 —— 浮在底部上层的可折叠栏，常驻可见，不占位 */
 .cart {
